@@ -40,8 +40,10 @@ def getLogin(request):
                     for i in range(len(jornadas)):
                         idjornada = jornadas[i]['idJornada']
                         jornadavotante = Jornada_votante.objects.values().filter(idJornada=idjornada,idVotante=idvotante)
-                        if not jornadavotante.exists():                      
-                            votos.append(jornadas[i]['idJornada'])
+                        if jornadavotante.exists():                      
+                            votos.append({"idJornada":jornadas[i]['idJornada'],"nombreJornada":jornadas[i]['nombreJornada'],"voto":True})
+                        else:
+                            votos.append({"idJornada":jornadas[i]['idJornada'],"nombreJornada":jornadas[i]['nombreJornada'],"voto":False})
                     response = {
                         'idVotante':idvotante,
                         'nombreVotante':usuario[0]['nombreVotante'],
