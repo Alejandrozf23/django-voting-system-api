@@ -27,7 +27,6 @@ class Jornada_candidato(models.Model):
     idJornadaCandidato = models.CharField(primary_key=True,null=False,blank=False,max_length=22)
     idJornada = models.ForeignKey(Jornada,on_delete=models.CASCADE,db_column='idJornada')
     idCandidato = models.ForeignKey(Candidato,on_delete=models.CASCADE,db_column='idCandidato')
-    novotos = models.IntegerField()
     
     class Meta:
         unique_together = (('idJornada','idCandidato'),)
