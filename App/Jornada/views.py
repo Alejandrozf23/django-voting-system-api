@@ -184,39 +184,6 @@ def getJornada(request):
             return JsonResponse(jsonresponse,safe=False)
 
 def editJornada(request,id):
-    if request.method == 'PUT':
-        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
-            edit_jornada = JSONParser().parse(request)
-            for i in range(len(edit_jornada)):
-                njornadacandidato = { #Elemento para la tabla jornada-candidato
-                    'idJornadaCandidato':str(id)+str(edit_jornada[i]),
-                    'idJornada':id,
-                    'idCandidato':edit_jornada[i],
-                    'novotos':0
-                }
-                jornadacandidato_serializer = JornadaCandidatoSerializer(data=njornadacandidato)
-                if jornadacandidato_serializer.is_valid(): #Valida los campos de jornada-candidato
-                    try:
-                        jornadacandidato_serializer.save() #Guarda la tupla en jornada-candidato
-                    except:
-                        jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                        return JsonResponse(jsonresponse,safe=False)
-            jsonresponse = {"code":"NE-200","message":"Success"}
-            return JsonResponse(jsonresponse,safe=False)
-        else:
-            jsonresponse = {"code":"NE-404","message":"Not found"}
-            return JsonResponse(jsonresponse,safe=False)
-    
-    if request.method == 'DELETE':
-        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
-            jornada = Jornada.objects.get(idJornada=id) #Obtiene la jornada
-            jornada.delete() #Elimina la jornada
-            jsonresponse = {"idJornada": id,"message":"Borrado con éxito"}
-            return JsonResponse(jsonresponse,safe=False)
-        else:
-            jsonresponse = {"code":"NE-404","message":"Not found"}
-            return JsonResponse(jsonresponse,safe=False)
-    
     if request.method == 'GET':
         if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
             jornada = Jornada.objects.values().filter(idJornada=id)[0] #Obtiene la jornada
@@ -255,6 +222,39 @@ def editJornada(request,id):
                     "candidatos":listcandidatos,
                 }
                 return JsonResponse(record,safe=False)
+        else:
+            jsonresponse = {"code":"NE-404","message":"Not found"}
+            return JsonResponse(jsonresponse,safe=False)
+
+    if request.method == 'PUT':
+        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
+            edit_jornada = JSONParser().parse(request)
+            for i in range(len(edit_jornada)):
+                njornadacandidato = { #Elemento para la tabla jornada-candidato
+                    'idJornadaCandidato':str(id)+str(edit_jornada[i]),
+                    'idJornada':id,
+                    'idCandidato':edit_jornada[i],
+                    'novotos':0
+                }
+                jornadacandidato_serializer = JornadaCandidatoSerializer(data=njornadacandidato)
+                if jornadacandidato_serializer.is_valid(): #Valida los campos de jornada-candidato
+                    try:
+                        jornadacandidato_serializer.save() #Guarda la tupla en jornada-candidato
+                    except:
+                        jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+                        return JsonResponse(jsonresponse,safe=False)
+            jsonresponse = {"code":"NE-200","message":"Success"}
+            return JsonResponse(jsonresponse,safe=False)
+        else:
+            jsonresponse = {"code":"NE-404","message":"Not found"}
+            return JsonResponse(jsonresponse,safe=False)
+    
+    if request.method == 'DELETE':
+        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
+            jornada = Jornada.objects.get(idJornada=id) #Obtiene la jornada
+            jornada.delete() #Elimina la jornada
+            jsonresponse = {"idJornada": id,"message":"Borrado con éxito"}
+            return JsonResponse(jsonresponse,safe=False)
         else:
             jsonresponse = {"code":"NE-404","message":"Not found"}
             return JsonResponse(jsonresponse,safe=False)
