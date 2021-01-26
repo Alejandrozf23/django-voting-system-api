@@ -51,19 +51,19 @@ def getVotante(request):
         nuevo_votante = JSONParser().parse(request)
         for i in range(len(nuevo_votante)):
             dicts = { #Crea el nuevo elemento para Votante
-                'idVotante':int(nuevo_votante[i]['idVotante']),
+                'idVotante':nuevo_votante[i]['idVotante'],
                 'nombreVotante':nuevo_votante[i]['nombreVotante'],
                 'correoInstitucional':nuevo_votante[i]['correoInstitucional'],
                 'correoAdministrador':nuevo_votante[i]['correoAdministrador'],
                 'password':nuevo_votante[i]['password'],
-                'tipo':int(nuevo_votante[i]['tipo'])
+                'tipo':nuevo_votante[i]['tipo']
             }
             votante_serializer = VotanteSerializer(data=dicts)
             if votante_serializer.is_valid(): #Valida los elementos del nuevo Votante
                 try:
                     votante_serializer.save() #Guarda el Votante en la DB
                     registrados = {
-                        'idVotante':int(nuevo_votante[i]['idVotante']),
+                        'idVotante':nuevo_votante[i]['idVotante'],
                         'nombreVotante':nuevo_votante[i]['nombreVotante'],
                         'correoInstitucional':nuevo_votante[i]['correoInstitucional']
                     }
@@ -78,16 +78,16 @@ def getVotante(request):
 
 def editVotante(request,id):
     if request.method == 'PUT':
-        if Votante.objects.values().filter(idVotante=int(id)).exists(): #Verifica que el votante existe
-            votante = Votante.objects.get(idVotante=int(id)) #Obtiene el votante
+        if Votante.objects.values().filter(idVotante=id).exists(): #Verifica que el votante existe
+            votante = Votante.objects.get(idVotante=id) #Obtiene el votante
             edit_votante = JSONParser().parse(request)
             edit = { #Crea la actualización del votante
-                'idVotante':int(id),
+                'idVotante':id,
                 'nombreVotante':edit_votante['nombreVotante'],
                 'correoInstitucional':edit_votante['correoInstitucional'],
-                'password':Votante.objects.values().filter(idVotante=int(id))[0]['password'],
-                'correoAdministrador':Votante.objects.values().filter(idVotante=int(id))[0]['correoAdministrador_id'],
-                'tipo':Votante.objects.values().filter(idVotante=int(id))[0]['tipo_id']
+                'password':Votante.objects.values().filter(idVotante=id)[0]['password'],
+                'correoAdministrador':Votante.objects.values().filter(idVotante=id)[0]['correoAdministrador_id'],
+                'tipo':Votante.objects.values().filter(idVotante=id)[0]['tipo_id']
             }
             votante_serializer = VotanteSerializer(votante,data=edit)
             if votante_serializer.is_valid(): #Valida los campos de la actualización
@@ -106,8 +106,8 @@ def editVotante(request,id):
             return JsonResponse(jsonresponse,safe=False)
     
     if request.method == 'DELETE':
-        if Votante.objects.values().filter(idVotante=int(id)).exists(): #Verifica que el votante exista
-            votante = Votante.objects.get(idVotante=int(id)) #Obtiene al votante
+        if Votante.objects.values().filter(idVotante=id).exists(): #Verifica que el votante exista
+            votante = Votante.objects.get(idVotante=id) #Obtiene al votante
             try:
                 votante.delete()#Elimina al votante
                 jsonresponse = {"idVotante": id,"message":"Borrado con éxito"}
