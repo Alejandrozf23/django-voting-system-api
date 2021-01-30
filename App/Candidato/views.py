@@ -1,5 +1,5 @@
 import json,sys
-from datetime import date
+from datetime import date,datetime
 from django.shortcuts import render
 from django.core import serializers
 from base64 import b64encode,b64decode
@@ -8,20 +8,46 @@ from django.http import JsonResponse
 from random import randint,uniform,random
 from .models import Candidato
 from .serializers import CandidatoSerializer
+from App.Jornada.models import Jornada,Jornada_candidato
 
 def getidCandidato(nombre):
-    norand = randint(0,100)
-    numbers = str(norand)
-    if norand<10:
-        numbers = '0'+str(norand)
+    norandom = randint(0,100)
+    numbers = str(norandom)
+    if norandom<10:
+        numbers = '0'+str(norandom)
     splitname = nombre.split(' ')
     name = splitname[0][0].upper()+splitname[len(splitname)-2][0].upper()+splitname[len(splitname)-1][0].upper() 
-    splitdate = str(date.today()).split('-')
-    year = splitdate[0][2]+splitdate[0][3]
-    month = splitdate[1]
-    day = splitdate[2]
-    dates = year+month+day
-    return numbers+name+dates
+    dates = date.today()
+    year = str(dates.year)[2]+str(dates.year)[3]
+    month = '0'+str(dates.month) if int(dates.month)<10 else str(dates.month)
+    day = '0'+str(dates.day) if int(dates.day)<10 else str(dates.day)
+    return numbers+name+year+month+day
+
+def getStatusCandidato(id):
+    jornada_candidato = Jornada_candidato.objects.values().filter(idCandidato_id=id)
+    if len(jornada_candidato)>0:
+        idjornada = jornada_candidato[0]['idJornada_id']
+        jornadas = Jornada.objects.values().filter(idJornada=idjornada)
+        actual = datetime.now()
+        fechaActual = datetime(actual.year,actual.month,actual.day,actual.hour,actual.minute,actual.second)
+        for i in range(len(jornadas)):            
+            dateInit = jornadas[i]['fechaInicio'].split(' ')
+            dateFinal = jornadas[i]['fechaFinal'].split(' ')
+            dateSplit = dateInit[0].split('/')
+            timeSplit = dateInit[1].split(':')
+                        
+            fechaInicio = datetime(int(dateSplit[2]),int(dateSplit[1]),int(dateSplit[0]),int(timeSplit[0]),int(timeSplit[1]),int(timeSplit[2]))
+
+            dateSplit = dateFinal[0].split('/')
+            timeSplit = dateFinal[1].split(':')
+
+            fechaFinal = datetime(int(dateSplit[2]),int(dateSplit[1]),int(dateSplit[0]),int(timeSplit[0]),int(timeSplit[1]),int(timeSplit[2]))
+
+            if fechaActual>fechaInicio and fechaActual<fechaFinal: #Candidato participa en Jornada activa
+                return True
+        return False
+    else:
+        return False
 
 # Create your views here.
 def getCandidato(request):
@@ -80,8 +106,11 @@ def getCandidato(request):
 
 def editCandidato(request,id):
     if request.method == 'PUT':
+        candidato = Candidato.objects.get(idCandidato=id) #Obtiene el candidato
         if Candidato.objects.values().filter(idCandidato=id).exists(): #Verifica que el candidato existe
-            candidato = Candidato.objects.get(idCandidato=id) #Obtiene el candidato
+            if getStatusCandidato(str(id)):
+                jsonresponse = {"code":"NE-409","message":"El candidato participa en una jornada activa"}
+                return JsonResponse(jsonresponse,safe=False)
             edit_candidato = JSONParser().parse(request)
             edit = { #Crea la actualización del candidato
                 'idCandidato':str(id),
@@ -111,7 +140,7 @@ def editCandidato(request,id):
         if Candidato.objects.values().filter(idCandidato=id).exists(): #Verifica que el candidato exista
             candidato = Candidato.objects.get(idCandidato=id) #Obtiene al candidato
             try:
-                candidato.delete()#Elimina al candidato
+                candidato.delete() #Elimina al candidato
                 jsonresponse = {"idCandidato": id,"message":"Borrado con éxito"}
                 return JsonResponse(jsonresponse,safe=False)
             except:
