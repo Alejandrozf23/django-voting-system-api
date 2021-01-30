@@ -50,23 +50,57 @@ def getallTipos():
         return None
 
 def getidJornada(inicio,fin,tipo):
-    splitdate = str(date.today()).split('-')
-    year = splitdate[0][2]+splitdate[0][3]
+    splitdate = str(date.today().year)
+    year = splitdate[2]+splitdate[3]
     splitI = inicio.split('/')
     splitF = fin.split('/')
     monthI = splitI[1]
-    if int(splitI[1])<10:
-        monthI = splitI[1]
     dayI = splitI[0]
-    if int(splitI[0])<10:
-        dayI = splitI[0]
-    monthF = splitF[1]
-    if int(splitF[1])<10:
-        monthF = splitF[1]
+    monthF = splitF[1]    
     dayF = splitF[0]
-    if int(splitF[0])<10:
-        dayF = splitF[0]
     return str(year+monthI+dayI+monthF+dayF+tipo)
+
+def getCandidatosByJornada(jornadas,resultjornadacandidato,candidatos):
+    listcandidatos = []
+    for j in range(len(resultjornadacandidato)):
+        if jornadas['idJornada'] == resultjornadacandidato[j]['idJornada_id']:
+            try:
+                index = 0
+                for l in range(len(candidatos)):
+                    if candidatos[l]['idCandidato'] == resultjornadacandidato[j]['idCandidato_id']:
+                        index = l
+                        break
+                record = {
+                    'idCandidato':resultjornadacandidato[j]['idCandidato_id'],
+                    'nombreCandidato':candidatos[index]['nombreCandidato'],
+                    'foto':candidatos[index]['foto']
+                }
+                listcandidatos.append(record)
+            except:
+                return None
+    return listcandidatos
+
+def getJornadasWithCandididatos(jornadas,resultjornadacandidato,candidatos):
+    requestjson = []
+    for i in range(len(jornadas)):
+        listcandidatos = getCandidatosByJornada(jornadas[i],resultjornadacandidato,candidatos)
+        record = {
+            'idJornada':jornadas[i]['idJornada'],
+            'nombreJornada':jornadas[i]['nombreJornada'],
+            'correoAdministrador':jornadas[i]['correoAdministrador_id'],
+            'fechaInicio':jornadas[i]['fechaInicio'],
+            'fechaFinal':jornadas[i]['fechaFinal'], 
+            "candidatos":listcandidatos,
+        }
+        requestjson.append(record)
+    return requestjson
+
+def getTypesOfCandidatos():
+    kindof = []
+    tipos = getallTipos() 
+    for i in range(len(tipos)):
+        kindof.append({"clave":tipos[i]['claveTipoJornada'],"descripcion":tipos[i]['descripcionTipoJornada']})
+    return kindof
 
 def getJornada(request):
     if request.method == 'GET': #Retorna todas las jornadas con sus respectivos candidatos
@@ -75,43 +109,9 @@ def getJornada(request):
         jornadacandidato = Jornada_candidato.objects.values()
         jornadacandidato_serializer = JornadaCandidatoSerializer(data=jornadacandidato)
         if jornadacandidato_serializer.is_valid and jornadas!=None and candidatos!=None: #Verifica que las entidades sean válidas
-            requestjson = []
             resultjornadacandidato = [entry for entry in jornadacandidato]
-            for i in range(len(jornadas)): #Obtiene la lista de candidatos asociados a cada jornada
-                listcandidatos = []
-                for j in range(len(resultjornadacandidato)):
-                    if jornadas[i]['idJornada'] == resultjornadacandidato[j]['idJornada_id']:
-                        try:
-                            index = 0
-                            for l in range(len(candidatos)):
-                                if candidatos[l]['idCandidato'] == resultjornadacandidato[j]['idCandidato_id']:
-                                    index = l
-                                    break
-                            record = {
-                                'idCandidato':resultjornadacandidato[j]['idCandidato_id'],
-                                'nombreCandidato':candidatos[index]['nombreCandidato'],
-                                'foto':candidatos[index]['foto']
-                            }
-                            listcandidatos.append(record)
-                        except:
-                            jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                            return JsonResponse(jsonresponse,safe=False)
-
-                record = {
-                    'idJornada':jornadas[i]['idJornada'],
-                    'nombreJornada':jornadas[i]['nombreJornada'],
-                    'correoAdministrador':jornadas[i]['correoAdministrador_id'],
-                    'fechaInicio':jornadas[i]['fechaInicio'],
-                    'fechaFinal':jornadas[i]['fechaFinal'], 
-                    "candidatos":listcandidatos,
-                }
-                requestjson.append(record)
-            
-            kindof = [] #Obtiene los tipos de jornadas que existen
-            tipos = getallTipos() 
-            for i in range(len(tipos)):
-                kindof.append({"clave":tipos[i]['claveTipoJornada'],"descripcion":tipos[i]['descripcionTipoJornada']})
-            
+            kindof = getTypesOfCandidatos()
+            requestjson = getJornadasWithCandididatos(jornadas,resultjornadacandidato,candidatos)
             return JsonResponse({"tipos":kindof,"jornadas":requestjson},safe=False)
         else: 
             jsonresponse = {"code":"NE-400","message":"Bad request"}
