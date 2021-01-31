@@ -25,18 +25,6 @@ def getallJornada():
     except:
         return None
 
-def getallCandidatos():
-    try:
-        candidato = Candidato.objects.values()
-        candidato_serializer = CandidatoSerializer(data=candidato)
-        if candidato_serializer.is_valid:
-            resultcandidato = [entry for entry in candidato]
-            return resultcandidato
-        else:
-            return None
-    except:
-        return None
-
 def getallTipos():
     try:
         tipos = Tipo_jornada.objects.values()
@@ -60,40 +48,27 @@ def getidJornada(inicio,fin,tipo):
     dayF = splitF[0]
     return str(year+monthI+dayI+monthF+dayF+tipo)
 
-def getCandidatosByJornada(jornadas,resultjornadacandidato,candidatos):
+def getCandidatosByJornada(idjornada):
     listcandidatos = []
-    for j in range(len(resultjornadacandidato)):
-        if jornadas['idJornada'] == resultjornadacandidato[j]['idJornada_id']:
-            try:
-                index = 0
-                for l in range(len(candidatos)):
-                    if candidatos[l]['idCandidato'] == resultjornadacandidato[j]['idCandidato_id']:
-                        index = l
-                        break
-                record = {
-                    'idCandidato':resultjornadacandidato[j]['idCandidato_id'],
-                    'nombreCandidato':candidatos[index]['nombreCandidato'],
-                    'foto':candidatos[index]['foto']
-                }
-                listcandidatos.append(record)
-            except:
-                return None
+    candidatos = Jornada_candidato.objects.values().filter(idJornada=idjornada)
+    for i in range(len(candidatos)):
+        idcandidato = candidatos[i]['idCandidato_id']
+        consultaCandidato = Candidato.objects.values().filter(idCandidato=idcandidato)
+        listcandidatos.append(consultaCandidato[0])
     return listcandidatos
 
-def getJornadasWithCandididatos(jornadas,resultjornadacandidato,candidatos):
-    requestjson = []
-    for i in range(len(jornadas)):
-        listcandidatos = getCandidatosByJornada(jornadas[i],resultjornadacandidato,candidatos)
-        record = {
-            'idJornada':jornadas[i]['idJornada'],
-            'nombreJornada':jornadas[i]['nombreJornada'],
-            'correoAdministrador':jornadas[i]['correoAdministrador_id'],
-            'fechaInicio':jornadas[i]['fechaInicio'],
-            'fechaFinal':jornadas[i]['fechaFinal'], 
-            "candidatos":listcandidatos,
-        }
-        requestjson.append(record)
-    return requestjson
+def getJornadaWithCandididatos(idjornada):
+    listcandidatos = getCandidatosByJornada(idjornada)
+    jornada = Jornada.objects.values().filter(idJornada=idjornada)
+    record = {
+        'idJornada':jornada[0]['idJornada'],
+        'nombreJornada':jornada[0]['nombreJornada'],
+        'correoAdministrador':jornada[0]['correoAdministrador_id'],
+        'fechaInicio':jornada[0]['fechaInicio'],
+        'fechaFinal':jornada[0]['fechaFinal'], 
+        "candidatos":listcandidatos,
+    }
+    return record
 
 def getTypesOfCandidatos():
     kindof = []
@@ -102,83 +77,68 @@ def getTypesOfCandidatos():
         kindof.append({"clave":tipos[i]['claveTipoJornada'],"descripcion":tipos[i]['descripcionTipoJornada']})
     return kindof
 
+def buildNewJornada(idjornada,nueva_jornada):        
+    njornada = {
+        'idJornada':idjornada,
+        'nombreJornada':nueva_jornada['nombreJornada'],
+        'fechaInicio':nueva_jornada['fechaInicio'],
+        'fechaFinal':nueva_jornada['fechaFinal'],
+        'correoAdministrador':nueva_jornada['correoAdministrador'],
+        'tipoJornada':nueva_jornada['tipoJornada']
+    }
+    return njornada
+
+def buildNewJornadaCandidato(idjornada,idcandidato):
+    jornadacandidato = {
+        'idJornadaCandidato':idjornada+str(idcandidato),
+        'idJornada':idjornada,
+        'idCandidato':idcandidato
+    }
+    return jornadacandidato
+
+def assignCandidatosToJornada(idjornada,candidatos):
+    registrados = []
+    if len(candidatos)>0:
+        for i in range(len(candidatos)):
+            jcserializer = JornadaCandidatoSerializer(data=buildNewJornadaCandidato(idjornada,candidatos[i]))
+            if jcserializer.is_valid():
+                try:
+                    jcserializer.save()
+                    registrados.append(candidatos[i])
+                except:
+                    print("Manejar excepcion")
+    if len(registrados) == len(candidatos):
+        return True
+    return False
+
 def getJornada(request):
     if request.method == 'GET': #Retorna todas las jornadas con sus respectivos candidatos
         jornadas = getallJornada()
-        candidatos = getallCandidatos()
-        jornadacandidato = Jornada_candidato.objects.values()
-        jornadacandidato_serializer = JornadaCandidatoSerializer(data=jornadacandidato)
-        if jornadacandidato_serializer.is_valid and jornadas!=None and candidatos!=None: #Verifica que las entidades sean válidas
-            resultjornadacandidato = [entry for entry in jornadacandidato]
+        if jornadas!=None:
+            requestjson = []
             kindof = getTypesOfCandidatos()
-            requestjson = getJornadasWithCandididatos(jornadas,resultjornadacandidato,candidatos)
+            for i in range(len(jornadas)):
+                requestjson.append(getJornadaWithCandididatos(jornadas[i]['idJornada']))
             return JsonResponse({"tipos":kindof,"jornadas":requestjson},safe=False)
         else: 
             jsonresponse = {"code":"NE-400","message":"Bad request"}
             return JsonResponse(jsonresponse,safe=False)
     
-    if request.method == 'POST':#Crea una nueva jornada
+    if request.method == 'POST':
         nueva_jornada = JSONParser().parse(request)
-        idjornada = getidJornada(nueva_jornada['fechaInicio'],nueva_jornada['fechaFinal'],nueva_jornada['tipoJornada'])        
-        njornada = {
-            'idJornada':idjornada,
-            'nombreJornada':nueva_jornada['nombreJornada'],
-            'fechaInicio':nueva_jornada['fechaInicio'],
-            'fechaFinal':nueva_jornada['fechaFinal'],
-            'correoAdministrador':nueva_jornada['correoAdministrador'],
-            'tipoJornada':nueva_jornada['tipoJornada']
-        }
-        jornada_serializer = JornadaSerializer(data=njornada)
-        if jornada_serializer.is_valid(): #Valida los campos de la jornada
+        idjornada = getidJornada(nueva_jornada['fechaInicio'],nueva_jornada['fechaFinal'],nueva_jornada['tipoJornada'])
+        jornada_serializer = JornadaSerializer(data=buildNewJornada(idjornada,nueva_jornada))
+        if jornada_serializer.is_valid():
             try:
-                jornada_serializer.save() #Guarda la jornada en la DB
-                candidatos = [] #Arreglo para candidatos
-                if len(nueva_jornada['candidatos'])>0: #La jornada incluye candidatos
-                    for i in range(len(nueva_jornada['candidatos'])):
-                        idcandidato = nueva_jornada['candidatos']
-                        njornadacandidato = { #Elemento para la tabla jornada-candidato
-                            'idJornadaCandidato':idjornada+str(idcandidato[i]),
-                            'idJornada':idjornada,
-                            'idCandidato':idcandidato[i],
-                            'novotos':0
-                        }
-                        jornadacandidato_serializer = JornadaCandidatoSerializer(data=njornadacandidato)
-                        if jornadacandidato_serializer.is_valid(): #Valida los campos de jornada-candidato
-                            try:
-                                jornadacandidato_serializer.save() #Guarda la tupla en jornada-candidato
-                                auxcandidato = Candidato.objects.values().filter(idCandidato=idcandidato[i]) #Obtenemos el candidato registrado
-                                print(auxcandidato)
-                                if auxcandidato!=None: #Error al consultar al candidato registrado
-                                    create = {
-                                        'idCandidato': auxcandidato[0]['idCandidato'],
-                                        'nombreCandidato': auxcandidato[0]['nombreCandidato'],
-                                        'foto': str(auxcandidato[0]['foto'])
-                                    }
-                                    print(create)
-                                    candidatos.append(create)
-                                else:
-                                    jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                                    return JsonResponse(jsonresponse,safe=False)
-                            except:
-                                jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                                return JsonResponse(jsonresponse,safe=False)
-                        else:
-                            jsonresponse = {"code":"NE-400","message":"Bad request"}
-                            return JsonResponse(jsonresponse,safe=False)
-
-                auxjornada = Jornada.objects.values().filter(idJornada=idjornada) #Consulta de la jornada resultante
-                cjornada = {
-                    'idJornada':auxjornada[0]['idJornada'],
-                    'nombreJornada':auxjornada[0]['nombreJornada'],
-                    'fechaInicio':auxjornada[0]['fechaInicio'],
-                    'fechaFinal':auxjornada[0]['fechaFinal'],
-                    'correoAdministrador':auxjornada[0]['correoAdministrador_id'],
-                    "candidatos": candidatos
-                }
-                return JsonResponse(cjornada,safe=False)
+                jornada_serializer.save()
             except:
                 jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                return JsonResponse(jsonresponse,safe=False)    
+                return JsonResponse(jsonresponse,safe=False)
+            if not assignCandidatosToJornada(idjornada,nueva_jornada['candidatos']):
+                jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+                return JsonResponse(jsonresponse,safe=False)
+            jornada = getJornadaWithCandididatos(idjornada)
+            return JsonResponse(jornada,safe=False)   
         else: 
             jsonresponse = {"code":"NE-400","message":"Bad request"}
             return JsonResponse(jsonresponse,safe=False)
