@@ -106,10 +106,14 @@ def assignCandidatosToJornada(idjornada,candidatos):
                     jcserializer.save()
                     registrados.append(candidatos[i])
                 except:
-                    print("Manejar excepcion")
-    if len(registrados) == len(candidatos):
-        return True
-    return False
+                    manageExceptionsFromCandidatos(registrados)
+                    return False
+    return True    
+
+def manageExceptionsFromCandidatos(registrados):
+    for i in range(len(registrados)):
+        jornadacandidato = Jornada_candidato.objects.get(idCandidato=registrados[i])
+        jornadacandidato.delete()
 
 def getJornada(request):
     if request.method == 'GET': #Retorna todas las jornadas con sus respectivos candidatos
