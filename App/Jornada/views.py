@@ -100,23 +100,67 @@ def assignCandidatosToJornada(idjornada,candidatos):
     registrados = []
     if len(candidatos)>0:
         for i in range(len(candidatos)):
-            jcserializer = JornadaCandidatoSerializer(data=buildNewJornadaCandidato(idjornada,candidatos[i]))
-            if jcserializer.is_valid():
-                try:
-                    jcserializer.save()
-                    registrados.append(candidatos[i])
-                except:
-                    manageExceptionsFromCandidatos(registrados)
-                    return False
+            if addCandidatoToJornada(idjornada,candidatos[i]):
+                registrados.append(candidatos[i])
+            else:
+                manageExceptionsFromCandidatos(idjornada,registrados)
+                return False
     return True    
 
-def manageExceptionsFromCandidatos(registrados):
+def manageExceptionsFromCandidatos(idjornada,registrados):
     for i in range(len(registrados)):
-        jornadacandidato = Jornada_candidato.objects.get(idCandidato=registrados[i])
+        jornadacandidato = Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=registrados[i])
         jornadacandidato.delete()
 
+def addCandidatoToJornada(idjornada,idcandidato): 
+    jcserializer = JornadaCandidatoSerializer(data=buildNewJornadaCandidato(idjornada,idcandidato))
+    if jcserializer.is_valid():
+        try:
+            jcserializer.save()
+            return True
+        except:
+            return False
+    return False
+
+def deleteCandidatoFromJornada(idjornada,idcandidato):    
+    if Jornada_candidato.objects.values().filter(idJornada=idjornada,idCandidato=idcandidato).exists():
+        jornadacandidato = Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=idcandidato)
+        try:
+            jornadacandidato.delete()
+            return True
+        except:
+            return False
+    return False
+
+def isCandidatoOnTheList(lista,idcandidato):
+    if idcandidato in lista:
+        return True
+    return False
+
+def editCandidatosFromJornadaCandidato(idjornada,candidatosRequest,candidatosDatabase):
+    agregados = []
+    eliminados = []
+    if len(candidatosRequest)>0:
+        for i in range(len(candidatosRequest)):
+            if not isCandidatoOnTheList(candidatosDatabase,candidatosRequest[i]):
+                if addCandidatoToJornada(idjornada,candidatosRequest[i]):
+                    agregados.append(candidatosRequest[i])
+                else:
+                    manageExceptionsFromCandidatos(idjornada,agregados)
+                    manageExceptionsFromCandidatos(idjornada,eliminados)
+                    return False
+        for i in range(len(candidatosDatabase)):
+            if not isCandidatoOnTheList(candidatosRequest,candidatosDatabase[i]):
+                if deleteCandidatoFromJornada(idjornada,candidatosDatabase[i]):
+                    eliminados.append(candidatosDatabase[i])
+                else:
+                    manageExceptionsFromCandidatos(idjornada,agregados)
+                    manageExceptionsFromCandidatos(idjornada,eliminados)
+                    return False
+    return True
+
 def getJornada(request):
-    if request.method == 'GET': #Retorna todas las jornadas con sus respectivos candidatos
+    if request.method == 'GET':
         jornadas = getallJornada()
         if jornadas!=None:
             requestjson = []
@@ -149,64 +193,30 @@ def getJornada(request):
 
 def editJornada(request,id):
     if request.method == 'GET':
-        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
-            jornada = Jornada.objects.values().filter(idJornada=id)[0] #Obtiene la jornada
-            candidatos = getallCandidatos()
-            jornadacandidato = Jornada_candidato.objects.values()
-            jornadacandidato_serializer = JornadaCandidatoSerializer(data=jornadacandidato)
-            if jornadacandidato_serializer.is_valid and candidatos!=None: #Verifica que las entidades sean válidas
-                resultjornadacandidato = [entry for entry in jornadacandidato]
-                listcandidatos = []
-                for j in range(len(resultjornadacandidato)):
-                    if id == resultjornadacandidato[j]['idJornada_id']:
-                        try:
-                            index = 0
-                            for l in range(len(candidatos)):
-                                if candidatos[l]['idCandidato'] == resultjornadacandidato[j]['idCandidato_id']:
-                                    index = l
-                                    break
-                            record = {
-                                'idCandidato':resultjornadacandidato[j]['idCandidato_id'],
-                                'nombreCandidato':candidatos[index]['nombreCandidato'],
-                                'propuestasGenerales':candidatos[index]['propuestasGenerales'],
-                                'propuestaArchivo':candidatos[index]['propuestaArchivo'],
-                                'foto':candidatos[index]['foto'],
-                                'correoAdministrador':candidatos[index]['correoAdministrador_id']
-                            }
-                            listcandidatos.append(record)
-                        except:
-                            jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                            return JsonResponse(jsonresponse,safe=False)
-                record = {
-                    'idJornada':jornada['idJornada'],
-                    'nombreJornada':jornada['nombreJornada'],
-                    'correoAdministrador':jornada['correoAdministrador_id'],
-                    'fechaInicio':jornada['fechaInicio'],
-                    'fechaFinal':jornada['fechaFinal'], 
-                    "candidatos":listcandidatos,
-                }
-                return JsonResponse(record,safe=False)
+        if Jornada.objects.values().filter(idJornada=id).exists(): 
+            jornada = Jornada.objects.values().filter(idJornada=id)[0]
+            record = getJornadaWithCandididatos(jornada['idJornada'])            
+            return JsonResponse(record,safe=False)
         else:
             jsonresponse = {"code":"NE-404","message":"Not found"}
             return JsonResponse(jsonresponse,safe=False)
 
     if request.method == 'PUT':
-        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
-            edit_jornada = JSONParser().parse(request)
-            for i in range(len(edit_jornada)):
-                njornadacandidato = { #Elemento para la tabla jornada-candidato
-                    'idJornadaCandidato':str(id)+str(edit_jornada[i]),
-                    'idJornada':id,
-                    'idCandidato':edit_jornada[i],
-                    'novotos':0
-                }
-                jornadacandidato_serializer = JornadaCandidatoSerializer(data=njornadacandidato)
-                if jornadacandidato_serializer.is_valid(): #Valida los campos de jornada-candidato
-                    try:
-                        jornadacandidato_serializer.save() #Guarda la tupla en jornada-candidato
-                    except:
-                        jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                        return JsonResponse(jsonresponse,safe=False)
+        if Jornada.objects.values().filter(idJornada=id).exists():
+            candidatosRequest = JSONParser().parse(request)
+            candidatos = Jornada_candidato.objects.values().filter(idJornada=id)            
+            if len(candidatos)>0:
+                candidatosDatabase = []
+                database = [entry for entry in candidatos]
+                for i in range(len(database)):
+                    candidatosDatabase.append(database[i]['idCandidato_id'])
+                if not editCandidatosFromJornadaCandidato(id,candidatosRequest,candidatosDatabase):
+                    jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+                    return JsonResponse(jsonresponse,safe=False)
+            else:
+                if not assignCandidatosToJornada(id,candidatosRequest):
+                    jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+                    return JsonResponse(jsonresponse,safe=False)
             jsonresponse = {"code":"NE-200","message":"Success"}
             return JsonResponse(jsonresponse,safe=False)
         else:
@@ -214,9 +224,13 @@ def editJornada(request,id):
             return JsonResponse(jsonresponse,safe=False)
     
     if request.method == 'DELETE':
-        if Jornada.objects.values().filter(idJornada=id).exists(): #Valida que la jornada existe
-            jornada = Jornada.objects.get(idJornada=id) #Obtiene la jornada
-            jornada.delete() #Elimina la jornada
+        if Jornada.objects.values().filter(idJornada=id).exists():
+            jornada = Jornada.objects.get(idJornada=id)
+            try:
+                jornada.delete()
+            except:
+                jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+                return JsonResponse(jsonresponse,safe=False)    
             jsonresponse = {"idJornada": id,"message":"Borrado con éxito"}
             return JsonResponse(jsonresponse,safe=False)
         else:
