@@ -3,20 +3,17 @@ from datetime import date
 from django.shortcuts import render
 from django.core import serializers
 from rest_framework.parsers import JSONParser
-from base64 import b64encode,b64decode
 from django.http import JsonResponse
-from .models import Jornada,Jornada_candidato,Tipo_jornada
-from .serializers import JornadaSerializer
-from .serializers import TipoJornadaSerializer
-from .serializers import JornadaCandidatoSerializer
+from . import models
+from . import serializers
 from App.Candidato.models import Candidato
 from App.Candidato.serializers import CandidatoSerializer
 
 # Create your views here.
 def getallJornada():
     try:
-        jornada = Jornada.objects.values()
-        jornada_serializer = JornadaSerializer(data=jornada)
+        jornada = models.Jornada.objects.values()
+        jornada_serializer = serializers.JornadaSerializer(data=jornada)
         if jornada_serializer.is_valid:
             resultjornada = [entry for entry in jornada]
             return resultjornada
@@ -27,8 +24,8 @@ def getallJornada():
 
 def getallTipos():
     try:
-        tipos = Tipo_jornada.objects.values()
-        tipos_serializer = TipoJornadaSerializer(data=tipos)
+        tipos = models.Tipo_jornada.objects.values()
+        tipos_serializer = serializers.TipoJornadaSerializer(data=tipos)
         if tipos_serializer.is_valid:
             resulttipos = [entry for entry in tipos]
             return resulttipos
@@ -50,7 +47,7 @@ def getidJornada(inicio,fin,tipo):
 
 def getCandidatosByJornada(idjornada):
     listcandidatos = []
-    candidatos = Jornada_candidato.objects.values().filter(idJornada=idjornada)
+    candidatos = models.Jornada_candidato.objects.values().filter(idJornada=idjornada)
     for i in range(len(candidatos)):
         idcandidato = candidatos[i]['idCandidato_id']
         consultaCandidato = Candidato.objects.values().filter(idCandidato=idcandidato)
@@ -59,7 +56,7 @@ def getCandidatosByJornada(idjornada):
 
 def getJornadaWithCandididatos(idjornada):
     listcandidatos = getCandidatosByJornada(idjornada)
-    jornada = Jornada.objects.values().filter(idJornada=idjornada)
+    jornada = models.Jornada.objects.values().filter(idJornada=idjornada)
     record = {
         'idJornada':jornada[0]['idJornada'],
         'nombreJornada':jornada[0]['nombreJornada'],
@@ -109,11 +106,11 @@ def assignCandidatosToJornada(idjornada,candidatos):
 
 def manageExceptionsFromCandidatos(idjornada,registrados):
     for i in range(len(registrados)):
-        jornadacandidato = Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=registrados[i])
+        jornadacandidato = models.Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=registrados[i])
         jornadacandidato.delete()
 
 def addCandidatoToJornada(idjornada,idcandidato): 
-    jcserializer = JornadaCandidatoSerializer(data=buildNewJornadaCandidato(idjornada,idcandidato))
+    jcserializer = serializers.JornadaCandidatoSerializer(data=buildNewJornadaCandidato(idjornada,idcandidato))
     if jcserializer.is_valid():
         try:
             jcserializer.save()
@@ -123,8 +120,8 @@ def addCandidatoToJornada(idjornada,idcandidato):
     return False
 
 def deleteCandidatoFromJornada(idjornada,idcandidato):    
-    if Jornada_candidato.objects.values().filter(idJornada=idjornada,idCandidato=idcandidato).exists():
-        jornadacandidato = Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=idcandidato)
+    if models.Jornada_candidato.objects.values().filter(idJornada=idjornada,idCandidato=idcandidato).exists():
+        jornadacandidato = models.Jornada_candidato.objects.get(idJornada=idjornada,idCandidato=idcandidato)
         try:
             jornadacandidato.delete()
             return True
@@ -175,7 +172,7 @@ def getJornada(request):
     if request.method == 'POST':
         nueva_jornada = JSONParser().parse(request)
         idjornada = getidJornada(nueva_jornada['fechaInicio'],nueva_jornada['fechaFinal'],nueva_jornada['tipoJornada'])
-        jornada_serializer = JornadaSerializer(data=buildNewJornada(idjornada,nueva_jornada))
+        jornada_serializer = serializers.JornadaSerializer(data=buildNewJornada(idjornada,nueva_jornada))
         if jornada_serializer.is_valid():
             try:
                 jornada_serializer.save()
@@ -193,8 +190,8 @@ def getJornada(request):
 
 def editJornada(request,id):
     if request.method == 'GET':
-        if Jornada.objects.values().filter(idJornada=id).exists(): 
-            jornada = Jornada.objects.values().filter(idJornada=id)[0]
+        if models.Jornada.objects.values().filter(idJornada=id).exists(): 
+            jornada = models.Jornada.objects.values().filter(idJornada=id)[0]
             record = getJornadaWithCandididatos(jornada['idJornada'])            
             return JsonResponse(record,safe=False)
         else:
@@ -202,9 +199,9 @@ def editJornada(request,id):
             return JsonResponse(jsonresponse,safe=False)
 
     if request.method == 'PUT':
-        if Jornada.objects.values().filter(idJornada=id).exists():
+        if models.Jornada.objects.values().filter(idJornada=id).exists():
             candidatosRequest = JSONParser().parse(request)
-            candidatos = Jornada_candidato.objects.values().filter(idJornada=id)            
+            candidatos = models.Jornada_candidato.objects.values().filter(idJornada=id)            
             if len(candidatos)>0:
                 candidatosDatabase = []
                 database = [entry for entry in candidatos]
@@ -224,8 +221,8 @@ def editJornada(request,id):
             return JsonResponse(jsonresponse,safe=False)
     
     if request.method == 'DELETE':
-        if Jornada.objects.values().filter(idJornada=id).exists():
-            jornada = Jornada.objects.get(idJornada=id)
+        if models.Jornada.objects.values().filter(idJornada=id).exists():
+            jornada = models.Jornada.objects.get(idJornada=id)
             try:
                 jornada.delete()
             except:
