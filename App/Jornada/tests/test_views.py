@@ -10,9 +10,9 @@ class TestViewJornada(TestCase):
         self.initDate = "01/01/2021 09:00:00"
         self.finalDate = "02/01/2021 18:00:00"
         self.urlAllJornadas = reverse('jornadas:getJornada')
-        self.urlJornadasByID = reverse('jornadas:editJornada',args=['idjornda'])
+        self.urlJornadasByID = reverse('jornadas:editJornada',args=['idjornada'])
         self.candidatos = []
-        self.request = request = {
+        self.request = {
                 "nombreJornada": "Proceso de auscultacion",
                 "fechaInicio": self.initDate,
                 "fechaFinal": self.finalDate,
