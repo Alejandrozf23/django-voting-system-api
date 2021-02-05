@@ -35,9 +35,6 @@ def getStatusCandidato(id):
         for i in range(len(jornadas)): 
             fechaInicio = getDateFormat(jornadas[i]['fechaInicio'])
             fechaFinal = getDateFormat(jornadas[i]['fechaFinal'])
-            print(fechaActual)
-            print(fechaInicio)
-            print(fechaFinal)
             if fechaActual>fechaInicio and fechaActual<fechaFinal:
                 return True
     return False
