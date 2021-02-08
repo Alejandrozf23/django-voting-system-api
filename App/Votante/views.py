@@ -1,6 +1,9 @@
 import json,sys,random,string
 from hashlib import sha256
 from datetime import date
+from django.conf import settings
+from django.template.loader import get_template
+from django.core.mail import EmailMultiAlternatives,send_mass_email
 from django.shortcuts import render
 from django.core import serializers
 from django.http import JsonResponse
@@ -20,28 +23,41 @@ def getallTipos():
     except:
         return None
 
-def buildPassword(length):
+def buildPassword(length,user,email):
     password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
-    if not sendMail(password):
+    if not sendMail(password,user,email):
         return None
     passhash = sha256(password.encode('utf-8')).hexdigest()    
     return passhash
 
-def sendMail(password):
-    email = 'alexzepeda2908@gmail.com'
-    return email
+def sendMail(password,user,mail):
+    context = {
+        'user':user,
+        'password':password
+    }
+    template = get_template('email_password.html')
+    content = template.render(context)
+    email = EmailMultiAlternatives(
+        'Nueva contraseña',
+        'TT2020-A060',
+        settings.EMAIL_HOST_USER,
+        [mail]
+    )
+    email.attach_alternative(content,'text/html')
+    return True if email.send() == 1 else False
+    send_mass_mail(datatuple,fail_silently=False,auth_user=None,auth_password=None,connection=None)
 
-def buildNewVotante(votante):
-    password = buildPassword(12)
+def buildNewVotante(votante):        
+    password = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
     record = {
         'idVotante':votante['idVotante'],
         'nombreVotante':votante['nombreVotante'],
         'correoInstitucional':votante['correoInstitucional'],
         'correoAdministrador':votante['correoAdministrador'],
-        'password':password if password != None else return {},
+        'password':password,
         'tipo':votante['tipo']
     }
-    return record
+    return None if password == None else record
 
 def buildSavedVotante(votante):
     record = {
@@ -52,13 +68,14 @@ def buildSavedVotante(votante):
     return record
 
 def buildEditVotante(id,votante):
+    edit_votante = models.Votante.objects.values().filter(idVotante=id)[0]
     edit = { 
         'idVotante':id,
         'nombreVotante':votante['nombreVotante'],
         'correoInstitucional':votante['correoInstitucional'],
-        'password':models.Votante.objects.values().filter(idVotante=id)[0]['password'],
-        'correoAdministrador':models.Votante.objects.values().filter(idVotante=id)[0]['correoAdministrador_id'],
-        'tipo':models.Votante.objects.values().filter(idVotante=id)[0]['tipo_id']
+        'password':edit_votante['password'],
+        'correoAdministrador':edit_votante['correoAdministrador_id'],
+        'tipo':edit_votante['tipo_id']
     }
     return edit
 
