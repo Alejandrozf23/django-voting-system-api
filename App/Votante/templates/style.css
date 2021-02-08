@@ -1,0 +1,39 @@
+body {
+    margin: 0;
+    background-color: #CCCCCC;
+}
+table {
+    border-spacing: 0;
+}
+td {
+    padding: 0;
+}
+img {
+    border: 0;
+}
+.wrapper {
+    width: 100%;
+    table-layout: fixed;
+    background-color: #CCCCCC;
+    padding-bottom: 40px;
+}
+.main {
+    background-color: #FFFFFF;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 600px;
+    border-spacing: 0;
+    font-family: sans-serif;
+    color: #4A4A4A;
+}
+.button {
+    background-color: #4980D2;
+    color: #FFFFFF;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+@media screen and (max-width: 600px){
+
+}
