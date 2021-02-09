@@ -1,15 +1,24 @@
 import json,sys,random,string
 from hashlib import sha256
 from datetime import date
+from threading import Thread
 from django.conf import settings
 from django.template.loader import get_template
-from django.core.mail import EmailMultiAlternatives,send_mass_email
+from django.core.mail import EmailMultiAlternatives
 from django.shortcuts import render
 from django.core import serializers
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from . import models
 from . import serializers
+
+class EmailThread(Thread):
+    def __init__(self,email):
+        self.email = email
+        Thread.__init__(self)
+
+    def run(self):
+        self.email.send(fail_silently=False)
 
 def getallTipos():
     try:
@@ -25,8 +34,7 @@ def getallTipos():
 
 def buildPassword(length,user,email):
     password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
-    if not sendMail(password,user,email):
-        return None
+    sendMail(password,user,email)
     passhash = sha256(password.encode('utf-8')).hexdigest()    
     return passhash
 
@@ -44,8 +52,7 @@ def sendMail(password,user,mail):
         [mail]
     )
     email.attach_alternative(content,'text/html')
-    return True if email.send() == 1 else False
-    send_mass_mail(datatuple,fail_silently=False,auth_user=None,auth_password=None,connection=None)
+    EmailThread(email).start()    
 
 def buildNewVotante(votante):        
     password = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
