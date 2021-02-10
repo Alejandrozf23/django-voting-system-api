@@ -34,11 +34,11 @@ def getallTipos():
 
 def buildPassword(length,user,email):
     password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
-    sendMail(password,user,email)
+    sendMail(password,user,email,'Nueva contraseña')
     passhash = sha256(password.encode('utf-8')).hexdigest()    
     return passhash
 
-def sendMail(password,user,mail):
+def sendMail(password,user,mail,asunto):
     context = {
         'user':user,
         'password':password
@@ -46,7 +46,7 @@ def sendMail(password,user,mail):
     template = get_template('email_password.html')
     content = template.render(context)
     email = EmailMultiAlternatives(
-        'Nueva contraseña',
+        asunto,
         'TT2020-A060',
         settings.EMAIL_HOST_USER,
         [mail]
