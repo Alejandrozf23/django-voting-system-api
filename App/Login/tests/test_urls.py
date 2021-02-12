@@ -7,3 +7,7 @@ class TestUrls(SimpleTestCase):
     def testGetLoginUrl(self):
         url = reverse('login:getLogin')
         self.assertEquals(resolve(url).func,views.getLogin)
+    
+    def testPutRestartPassword(self):
+        url = reverse('login:restartPassword')
+        self.assertEquals(resolve(url).func,views.restartPassword)
