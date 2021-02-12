@@ -52,9 +52,9 @@ def sendMail(password,user,mail,asunto):
         [mail]
     )
     email.attach_alternative(content,'text/html')
-    EmailThread(email).start()    
+    EmailThread(email).start()
 
-def buildNewVotante(votante):        
+def buildNewVotante(votante):
     password = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
     record = {
         'idVotante':votante['idVotante'],
