@@ -13,109 +13,121 @@ from App.Jornada.serializers import JornadaVotanteSerializer,JornadaCandidatoSer
 def getAllVotos(idcandidato,idjornada):
     novotos = 0
     result = Jornada_votante.objects.values().filter(idCandidato=idcandidato,idJornada=idjornada)
-    if len(result)>0:
-        for i in range(len(result)):
-            novotos += 1
-        return novotos
-    else:
-        return 0
+    for i in range(len(result)):
+        novotos += 1
+    return novotos
 
+def getCandidatosByJornada(votosTotales):
+    candidatosByJornada = []
+    for i in range(len(votosTotales)):
+        nombre = Candidato.objects.values().filter(idCandidato=votosTotales[i]['idCandidato_id'])[0]['nombreCandidato']
+        candidatosByJornada.append({'idCandidato':votosTotales[i]['idCandidato_id'],'nombre':nombre})
+    return candidatosByJornada
+
+def getVotantesByJornada(votosParciales):
+    votantesByJornada = []
+    for i in range(len(votosParciales)):
+        tipo = Votante.objects.values().filter(idVotante=votosParciales[i]['idVotante_id'])[0]['tipo_id']
+        votantesByJornada.append({'idVotante':votosParciales[i]['idVotante_id'],'tipo':tipo})
+    return votantesByJornada
+
+def getCandidatosTotales(id,votosTotales,candidatosByJornada):
+    totales = []
+    for i in range(len(votosTotales)):
+        novotos = getAllVotos(votosTotales[i]['idCandidato_id'],id)
+        record = {
+            'nombreCandidato':candidatosByJornada[i]['nombre'],
+            'novotos':novotos
+        }
+        totales.append(record)
+    return totales
+
+def getCandidatosParciales(tipos_votantes,candidatosByJornada):
+    parciales = []
+    for i in range(len(tipos_votantes)):
+        auxiliar = []
+        for j in range(len(candidatosByJornada)):
+            auxiliar.append({
+                'nombreCandidato':candidatosByJornada[j]['nombre'],
+                'novotos':0
+            })
+        record = {
+            'tipo':tipos_votantes[i]['tipo'],
+            'votos':auxiliar
+        }
+        parciales.append(record)
+    return parciales
+
+def getVotosParciales(votosParciales,votantesByJornada,candidatosByJornada,parciales):
+    tiposDisponibles = Tipo_Votante.objects.values()
+    for i in range(len(votosParciales)):
+        idVotante = votosParciales[i]['idVotante_id']
+        idCandidato = votosParciales[i]['idCandidato_id']
+        for i in range(len(votantesByJornada)):
+            if votantesByJornada[i]['idVotante'] == idVotante:
+                tipoVotante = votantesByJornada[i]['tipo']
+                for l in range(len(tiposDisponibles)):
+                    if tiposDisponibles[l]['idtipovotante'] == tipoVotante:
+                        indexTipo = l
+                        break
+                for l in range(len(candidatosByJornada)):
+                    if candidatosByJornada[l]['idCandidato'] == idCandidato:
+                        indexCandidato = l
+                        break
+                parciales[indexTipo]['votos'][indexCandidato]['novotos']+=1
+                break
+    return parciales
+
+def validateEntidadesToVote(idCandidato,idVotante,idJornada):
+    votante = Votante.objects.values().filter(idVotante=idVotante)
+    candidato = Candidato.objects.values().filter(idCandidato=idCandidato)
+    jornada_candidato = Jornada_candidato.objects.values().filter(idJornada=idJornada,idCandidato=idCandidato)
+    jornada_votante = Jornada_votante.objects.values().filter(idJornada=idJornada,idVotante=idVotante)
+    return True if votante.exists() and candidato.exists() and jornada_candidato.exists() and not jornada_votante.exists() else False
+
+def buildJornadaVotante(idJornada,idVotante,idCandidato):
+    jornadaVotante = {
+        'idJornadaVotante':str(idJornada)+str(idVotante),
+        'idVotante':idVotante,
+        'idJornada':str(idJornada),
+        'idCandidato':idCandidato
+    }
+    return jornadaVotante
+
+def saveJornadaVotante(jornadaVotante_serializers):
+    try:
+        jornadaVotante_serializers.save()
+        return True
+    except:
+        return False
 
 def getVotaciones(request,id):
     if request.method == 'GET':
-        total = []
-        parcial = []
-        votosT = Jornada_candidato.objects.values().filter(idJornada=id)
-        votosP = Jornada_votante.objects.values().filter(idJornada=id).order_by('-idCandidato')
-        
-        votantesporjornada = []
-        candidatosporjornada = []
-        for i in range(len(votosT)):
-            nombre = Candidato.objects.values().filter(idCandidato=votosT[i]['idCandidato_id'])[0]['nombreCandidato']
-            candidatosporjornada.append({'idCandidato':votosT[i]['idCandidato_id'],'nombre':nombre})
-        for i in range(len(votosP)):
-            tipo = Votante.objects.values().filter(idVotante=votosP[i]['idVotante_id'])[0]['tipo_id']
-            votantesporjornada.append({'idVotante':votosP[i]['idVotante_id'],'tipo':tipo})
+        votosTotales = Jornada_candidato.objects.values().filter(idJornada=id)
+        votosParciales = Jornada_votante.objects.values().filter(idJornada=id).order_by('-idCandidato')
 
-        for i in range(len(votosT)): #Ciclo para votos totales
-            novotos = getAllVotos(votosT[i]['idCandidato_id'],id)
-            for j in range(len(candidatosporjornada)):
-                record = {
-                    'nombreCandidato':candidatosporjornada[i]['nombre'],
-                    'novotos':novotos
-                }
-            total.append(record)
-        
+        votantesByJornada = getVotantesByJornada(votosParciales)
+        candidatosByJornada = getCandidatosByJornada(votosTotales)
+
         tipos_votantes = Tipo_Votante.objects.values()
-        for i in range(len(tipos_votantes)):
-            auxiliar = []
-            for j in range(len(candidatosporjornada)):
-                auxiliar.append({
-                    'nombreCandidato':candidatosporjornada[j]['nombre'],
-                    'novotos':0
-                })
-            record = {
-                'tipo':tipos_votantes[i]['tipo'],
-                'votos':auxiliar
-            }
-            parcial.append(record)
-
-        tiposdisponibles = Tipo_Votante.objects.values()
-        for i in range(len(votosP)):
-            idvotante = votosP[i]['idVotante_id']
-            idcandidato = votosP[i]['idCandidato_id']
-            for j in range(len(votantesporjornada)):
-                if votantesporjornada[i]['idVotante'] == idvotante:
-                    tipovotante = votantesporjornada[i]['tipo'] 
-                    for l in range(len(tiposdisponibles)):
-                        if tiposdisponibles[l]['idtipovotante'] == tipovotante:
-                            indextipo = l
-                            break
-                    for l in range(len(candidatosporjornada)):
-                        if candidatosporjornada[l]['idCandidato'] == idcandidato:
-                            indexcandidato = l
-                            break
-                    parcial[indextipo]['votos'][indexcandidato]['novotos']+=1
-                    break
-        jsonresponse = {'totales':total,'parciales':parcial}
+        totales = getCandidatosTotales(id,votosTotales,candidatosByJornada)
+        parciales = getCandidatosParciales(tipos_votantes,candidatosByJornada)
+        
+        jsonresponse = {'totales':totales,'parciales':getVotosParciales(votosParciales,votantesByJornada,candidatosByJornada,parciales)}
         return JsonResponse(jsonresponse,safe=False)
     
-    if request.method == 'POST':
-        #Obtiene los ID de los objetos
+    if request.method == 'POST':        
         datarequest = JSONParser().parse(request)
-        idvotante = datarequest['idVotante']
-        idcandidato = datarequest['idCandidato']
-        #Obtiene los objetos de la DB
-        candidato = Candidato.objects.values().filter(idCandidato=idcandidato)
-        jornadac = Jornada_candidato.objects.values().filter(idJornada=id,idCandidato=idcandidato)
-        votante = Votante.objects.values().filter(idVotante=idvotante)
-        jornadav = Jornada_votante.objects.values().filter(idJornada=id,idVotante=idvotante)
+        idVotante = datarequest['idVotante']
+        idCandidato = datarequest['idCandidato']        
         
-        if candidato.exists() and jornadac.exists() and votante.exists() and not jornadav.exists(): #Verifica que todas las entidades existan
-            jornadavotante = {
-                'idJornadaVotante':str(id)+str(idvotante),
-                'idVotante':idvotante,
-                'idJornada':str(id),
-                'idCandidato':idcandidato
-            }
-
-            jornadacandidatodb = Jornada_candidato.objects.get(idJornada=id,idCandidato=idcandidato)
-            jornadacandidato = {
-                'idJornadaCandidato':str(id)+str(idcandidato),
-                'idJornada':str(id),
-                'idCandidato':str(idcandidato),
-            }
-
-            jornadavotante_serializers = JornadaVotanteSerializer(data=jornadavotante)
-            jornadacandidato_serializers = JornadaCandidatoSerializer(jornadacandidatodb,data=jornadacandidato)
-            
-            if jornadavotante_serializers.is_valid() and jornadacandidato_serializers.is_valid(): #Procesos de validación para los votos
-                try:
-                    jornadavotante_serializers.save()
-                    jornadacandidato_serializers.save()
+        if validateEntidadesToVote(idCandidato,idVotante,id):
+            jornadaVotante_serializers = JornadaVotanteSerializer(data=buildJornadaVotante(id,idVotante,idCandidato))
+            if jornadaVotante_serializers.is_valid(): 
+                if saveJornadaVotante(jornadaVotante_serializers):
                     jsonresponse = {'code':'NE-200','message':'Success'}
                     return JsonResponse(jsonresponse,safe=False)
-                except:
+                else:
                     jsonresponse = {'code':'NE-500','message':'Lo siento. Algo salió mal'}
                     return JsonResponse(jsonresponse,safe=False)
             else:
