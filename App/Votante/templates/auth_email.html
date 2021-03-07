@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>HTML Email</title>
+    <style type="text/css">
+        body {
+            margin: 0;
+            background-color: #CCCCCC;
+        }
+        table {
+            border-spacing: 0;
+        }
+        td {
+            padding: 0;
+        }
+        img {
+            border: 0;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #CCCCCC;
+            padding-bottom: 40px;
+        }
+        .main {
+            background-color: #FFFFFF;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 600px;
+            border-spacing: 0;
+            font-family: sans-serif;
+            color: #4A4A4A;
+        }
+        .button {
+            background-color: #4980D2;
+            color: #FFFFFF;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        @media screen and (max-width: 600px){
+
+        }
+    </style>
+</head>
+<body>
+    <center class="wrapper">
+        <table class="main" width="100%">
+            <tr>
+                <td>
+                    <table width="100%">
+                        <tr>
+                            <td style="text-align: center; background-color: #4980D2; color:#4980D2; font-size: 18px;">
+                                <img src="https://dl.dropboxusercontent.com/s/6y0mfhg7mlkfhhp/logo.png?dl=0" alt="Logo de Netoli" width="180">
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td style="padding-bottom: 40px;">
+                    <table width="100%">
+                        <tr>
+                            <td style="text-align: center;" >
+                                <p style="font-size: 30px; font-weight: bold;">Autenticación de cuenta</p>
+                                <p style="text-align: justify; padding-left: 20px;">Hola {{user}}</p>
+                                <p style="text-align: justify; padding-left: 20px; padding-right: 20px;">
+                                   Esta es su contraseña de acceso </p>
+                                <p style="font-size: 25px; font-weight: bold;">{{password}}</p>
+                                <a class="button" href="{{host}}{{id}}/{{token}}">Autenticar</a>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table width="100%">
+                        <tr>
+                            <td style="text-align: center; background-color: #4980D2; padding: 15px; color:#FFFFFF; font-size: 18px;">
+                                <p style="font-weight: bold;">Atentamente. Alejandro Zepeda</p>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+        </table>
+    </center>
+</body>
+</html>
