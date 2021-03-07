@@ -33,12 +33,12 @@ def getallTipos():
     except:
         return None
 
-def sendMail(password,user,mail,asunto):
+def sendMailRestart(password,user,mail,asunto):
     context = {
         'user':user,
         'password':password
     }
-    template = get_template('email_password.html')
+    template = get_template('restart_password.html')
     content = template.render(context)
     email = EmailMultiAlternatives(
         asunto,
@@ -49,37 +49,40 @@ def sendMail(password,user,mail,asunto):
     email.attach_alternative(content,'text/html')
     EmailThread(email).start()
 
+def sendMailCode(pcode,user,mail,asunto):
+    context = {
+        'user':user,
+        'code':code
+    }
+    template = get_template('code_email.html')
+    content = template.render(context)
+    email = EmailMultiAlternatives(
+        asunto,
+        'TT2020-A060',
+        settings.EMAIL_HOST_USER,
+        [mail]
+    )
+    email.attach_alternative(content,'text/html')
+    EmailThread(email).start()
+
+def generateAccessCode(length,user,email):
+    code = ''.join(random.choice(string.digits) for x in range(length))
+    sendMailCode(code,user,email,'Código de acceso')
+    return code
+
 def buildPassword(length,user,email):
     password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
-    sendMail(password,user,email,'Restauración de contraseña')
+    sendMailRestart(password,user,email,'Restauración de contraseña')
     passhash = sha256(password.encode('utf-8')).hexdigest()    
     return passhash
 
-def saveNewVotante(votante_serializer):
+def restartPassword_Votante(votante):
     try:
-        votante_serializer.save()
+        consult = Votante.objects.get(idVotante=votante['idVotante']) 
+        consult.password = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
+        consult.save()
         return True
     except:
-        return False
-
-def buildEditVotante(votante,password):
-    edit = { 
-        'idVotante':votante['idVotante'],
-        'nombreVotante':votante['nombreVotante'],
-        'correoInstitucional':votante['correoInstitucional'],
-        'password':password,
-        'correoAdministrador':votante['correoAdministrador_id'],
-        'tipo':votante['tipo_id']
-    }
-    return edit
-
-def restartPassword_Votante(votante):
-    consult = Votante.objects.get(idVotante=votante['idVotante']) 
-    hashPassword = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
-    votante_serializer = VotanteSerializer(consult,data=buildEditVotante(votante,hashPassword))
-    if votante_serializer.is_valid():
-        return True if saveNewVotante(votante_serializer) else False
-    else:
         return False
 
 def getJornadasByVotante(idvotante):
@@ -119,21 +122,17 @@ def getLogin(request):
             usuario = models.Votante.objects.values().filter(correoInstitucional=email)
             if usuario.exists():
                 if email==usuario[0]['correoInstitucional'] and password==usuario[0]['password']:
-                    idvotante = usuario[0]['idVotante']
-                    response = {
-                        'idVotante':idvotante,
-                        'nombreVotante':usuario[0]['nombreVotante'],
-                        'votos':getJornadasByVotante(idvotante)
-                    }
-                    return JsonResponse(response,safe=False)
+                    consult = Votante.objects.get(idVotante=usuario[0]['idVotante'])
+                    consult.access_code = generateAccessCode(6,usuario[0]['nombreVotante'],email)
+                    consult.save()
+                    jsonresponse = {'code':'NE-200','message':'Success'}
+                    return JsonResponse(jsonresponse,safe=False)
                 else:
                     jsonresponse = {'code':'NE-400','message':'Bad request'}
                     return JsonResponse(jsonresponse,safe=False)
             else:
                 jsonresponse = {'code':'NE-404','message':'Not found'}
                 return JsonResponse(jsonresponse,safe=False) 
-        jsonresponse = {'code':'NE-200','message':'Success'}
-        return JsonResponse(jsonresponse,safe=False)
 
 def restartPassword(request):
     if request.method == 'PUT':
@@ -148,3 +147,20 @@ def restartPassword(request):
         else:
             jsonresponse = {"code":"NE-404","message":"Not found"}
             return JsonResponse(jsonresponse,safe=False)
+
+def accessCode(request):
+    if request.method == 'POST':
+        jsonrequest = JSONParser().parse(request)
+        email = jsonrequest['correo']
+        code = jsonrequest['codigo']
+        usuario = models.Votante.objects.values().filter(correoInstitucional=email)[0]
+        if usuario['access_code'] == code:
+            idvotante = usuario['idVotante']
+            response = {
+                'idVotante':idvotante,
+                'nombreVotante':usuario['nombreVotante'],
+                'votos':getJornadasByVotante(idvotante)
+            }
+        else:
+            response = {'code':'NE-400','message':'Bad request'}
+        return JsonResponse(response,safe=False)

@@ -94,8 +94,10 @@ USE_TZ = True
 STATIC_URL = '/static/'
 CORS_ORIGIN_ALLOW_ALL=True
 
+LOGIN = config('HOST_LOGIN')
 EMAIL_HOST = 'smtp.googlemail.com'
 EMAIL_PORT = 587
+EMAIL_HOST_WEB = config('HOST_WEB')
 EMAIL_HOST_USER = config('EMAIL_HOST')
 EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')
 EMAIL_USE_TLS = True
