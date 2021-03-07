@@ -32,18 +32,24 @@ def getallTipos():
     except:
         return None
 
-def buildPassword(length,user,email):
+def buildPassword(length,user,email,token,iduser):
     password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
-    sendMail(password,user,email,'Nueva contraseña')
-    passhash = sha256(password.encode('utf-8')).hexdigest()    
+    sendMail(iduser,password,user,email,'Autenticación de cuenta',token)
+    passhash = getHashString(password)
     return passhash
 
-def sendMail(password,user,mail,asunto):
+def getHashString(message):
+    return sha256(message.encode('utf-8')).hexdigest()
+
+def sendMail(iduser,password,user,mail,asunto,token):
     context = {
+        'id':iduser,
         'user':user,
-        'password':password
+        'password':password,
+        'token':token,
+        'host':settings.EMAIL_HOST_WEB
     }
-    template = get_template('email_password.html')
+    template = get_template('auth_email.html')
     content = template.render(context)
     email = EmailMultiAlternatives(
         asunto,
@@ -55,14 +61,20 @@ def sendMail(password,user,mail,asunto):
     EmailThread(email).start()
 
 def buildNewVotante(votante):
-    password = buildPassword(12,votante['nombreVotante'],votante['correoInstitucional'])
+    iduser = votante['idVotante']
+    nombre = votante['nombreVotante']
+    token = getHashString(nombre)
+    password = buildPassword(12,nombre,votante['correoInstitucional'],token,iduser)
     record = {
-        'idVotante':votante['idVotante'],
-        'nombreVotante':votante['nombreVotante'],
+        'idVotante':iduser,
+        'nombreVotante':nombre,
         'correoInstitucional':votante['correoInstitucional'],
         'correoAdministrador':votante['correoAdministrador'],
         'password':password,
-        'tipo':votante['tipo']
+        'tipo':votante['tipo'],
+        'validate':False,
+        'auth_token':token,
+        'access_code':'012345'
     }
     return None if password == None else record
 
@@ -82,7 +94,10 @@ def buildEditVotante(id,votante):
         'correoInstitucional':votante['correoInstitucional'],
         'password':edit_votante['password'],
         'correoAdministrador':edit_votante['correoAdministrador_id'],
-        'tipo':edit_votante['tipo_id']
+        'tipo':edit_votante['tipo_id'],
+        'validate':edit_votante['validate'],
+        'auth_token':edit_votante['auth_token'],
+        'access_code':edit_votante['access_code']
     }
     return edit
 
