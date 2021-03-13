@@ -8,5 +8,4 @@ urlpatterns = [
     path('votantes/',include(('App.Votante.urls','votantes'))),
     path('login/',include(('App.Login.urls','login'))),
     path('votaciones/',include(('App.Votaciones.urls','votaciones'))),
-    path('auth/',include(('App.Auth.urls','auth'))),
 ]

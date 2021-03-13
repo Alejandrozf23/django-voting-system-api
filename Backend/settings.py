@@ -59,12 +59,12 @@ WSGI_APPLICATION = 'Backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': config('DB_GESTOR'),
         'NAME':config('DB_NAME'),
         'USER':config('DB_USER'),
         'PASSWORD':config('DB_PASSWORD'),
         'HOST':config('DB_HOST'),
-        'PORT':'3306',
+        'PORT':config('DB_PORT'),
     }
 }
 
@@ -95,9 +95,9 @@ STATIC_URL = '/static/'
 CORS_ORIGIN_ALLOW_ALL=True
 
 LOGIN = config('HOST_LOGIN')
-EMAIL_HOST = 'smtp.googlemail.com'
-EMAIL_PORT = 587
-EMAIL_HOST_WEB = config('HOST_WEB')
+EMAIL_HOST = config('EMAIL_SERVER')
+EMAIL_PORT = config('EMAIL_PORT')
+EMAIL_HOST_WEB = config('HOST_LOGIN')
 EMAIL_HOST_USER = config('EMAIL_HOST')
 EMAIL_HOST_PASSWORD = config('EMAIL_PASSWORD')
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = config('EMAIL_TLS')
