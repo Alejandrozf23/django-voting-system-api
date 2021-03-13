@@ -36,7 +36,8 @@ def getallTipos():
 def sendMailRestart(password,user,mail,asunto):
     context = {
         'user':user,
-        'password':password
+        'password':password,
+        'host':settings.EMAIL_HOST_WEB
     }
     template = get_template('restart_password.html')
     content = template.render(context)
@@ -49,10 +50,11 @@ def sendMailRestart(password,user,mail,asunto):
     email.attach_alternative(content,'text/html')
     EmailThread(email).start()
 
-def sendMailCode(pcode,user,mail,asunto):
+def sendMailCode(code,user,mail,asunto):
     context = {
         'user':user,
-        'code':code
+        'code':code,
+        'host':settings.EMAIL_HOST_WEB
     }
     template = get_template('code_email.html')
     content = template.render(context)

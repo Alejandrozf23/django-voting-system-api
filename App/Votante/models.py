@@ -11,11 +11,9 @@ class Votante(models.Model):
     nombreVotante = models.CharField(max_length=50,null=False)
     correoInstitucional = models.CharField(max_length=40,null=False)
     password = models.CharField(max_length=64,null=False,blank=False)
-    validate = models.BooleanField(default=False)
-    auth_token = models.CharField(max_length=64,null=False,blank=False)
-    access_code = models.CharField(max_length=6,null=False)
     tipo = models.ForeignKey(Tipo_Votante,on_delete=models.CASCADE)
     correoAdministrador = models.ForeignKey(Administrador,on_delete=models.CASCADE)
+    access_code = models.CharField(max_length=6,null=False)
     
     def __str__(self):
         return self.nombreVotante

@@ -9,4 +9,4 @@ class TipoVotanteSerializer(serializers.ModelSerializer):
 class VotanteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Votante
-        fields = ('idVotante','nombreVotante','correoInstitucional','correoAdministrador','password','tipo','validate','auth_token','access_code')
+        fields = ('idVotante','nombreVotante','correoInstitucional','correoAdministrador','password','tipo','access_code')
