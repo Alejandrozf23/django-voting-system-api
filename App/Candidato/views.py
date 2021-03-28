@@ -61,6 +61,18 @@ def buildNewCandidato(idcandidato,candidato,email):
     }
     return dicts
 
+def updateCandidato(idCandidato,candidatoUpdate):
+    try:
+        candidatoDB = Candidato.objects.get(idCandidato = idCandidato)
+        candidatoDB.nombreCandidato = candidatoUpdate['nombreCandidato']
+        candidatoDB.propuestasGenerales = candidatoUpdate['propuestasGenerales']
+        candidatoDB.propuestaArchivo = candidatoUpdate['propuestaArchivo']
+        candidatoDB.foto = candidatoUpdate['foto']
+        candidatoDB.save()
+        return True
+    except:
+        return False
+
 def saveCandidatointoDB(candidato_serializer):
     try:
         candidato_serializer.save()
@@ -107,24 +119,17 @@ def getCandidato(request):
     
 def editCandidato(request,id):
     if request.method == 'PUT':
-        candidato = Candidato.objects.get(idCandidato=id)
         candidatoDB = Candidato.objects.values().filter(idCandidato=id)
         if candidatoDB.exists():
             if getStatusCandidato(str(id)):
                 jsonresponse = {"code":"NE-409","message":"El candidato participa en una jornada activa"}
                 return JsonResponse(jsonresponse,safe=False)
-            candidatoUpdate = JSONParser().parse(request)
-            candidato_serializer = CandidatoSerializer(candidato,data=buildNewCandidato(id,candidatoUpdate,candidatoDB[0]['correoAdministrador_id']))
-            if candidato_serializer.is_valid():
-                if saveCandidatointoDB(candidato_serializer):
-                    jsonresponse = {"code":"NE-0","message":"Success"}
-                    return JsonResponse(jsonresponse,safe=False)
-                else:
-                    jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                    return JsonResponse(jsonresponse,safe=False)
-            else:
-                jsonresponse = {"code":"NE-400","message":"Bad request"}
+            candidatoRequest = JSONParser().parse(request)
+            if updateCandidato(id,candidatoRequest):
+                jsonresponse = {"code":"NE-0","message":"Success"}
                 return JsonResponse(jsonresponse,safe=False) 
+            jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+            return JsonResponse(jsonresponse,safe=False)
         else:
             jsonresponse = {"code":"NE-404","message":"Not found"}
             return JsonResponse(jsonresponse,safe=False)

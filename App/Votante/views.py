@@ -81,18 +81,15 @@ def buildSavedVotante(votante):
     }
     return record
 
-def buildEditVotante(id,votante):
-    edit_votante = models.Votante.objects.values().filter(idVotante=id)[0]
-    edit = { 
-        'idVotante':id,
-        'nombreVotante':votante['nombreVotante'],
-        'correoInstitucional':votante['correoInstitucional'],
-        'password':edit_votante['password'],
-        'correoAdministrador':edit_votante['correoAdministrador_id'],
-        'tipo':edit_votante['tipo_id'],
-        'access_code':edit_votante['access_code']
-    }
-    return edit
+def updateVotante(idVotante,votanteUpdate):
+    try:
+        votanteDB = models.Votante.objects.get(idVotante = idVotante)
+        votanteDB.nombreVotante = votanteUpdate['nombreVotante']
+        votanteDB.correoInstitucional = votanteUpdate['correoInstitucional']
+        votanteDB.save()
+        return True
+    except:
+        return False
 
 def saveNewVotante(votante_serializer):
     try:
@@ -159,20 +156,14 @@ def getVotante(request):
 
 def editVotante(request,id):
     if request.method == 'PUT':
-        if models.Votante.objects.values().filter(idVotante=id).exists(): 
-            votante = models.Votante.objects.get(idVotante=id) 
-            edit_votante = JSONParser().parse(request)
-            votante_serializer = serializers.VotanteSerializer(votante,data=buildEditVotante(id,edit_votante))
-            if votante_serializer.is_valid():
-                if saveNewVotante(votante_serializer):
-                    jsonresponse = {"code":"NE-200","message":"Success"}
-                    return JsonResponse(jsonresponse,safe=False)
-                else:
-                    jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
-                    return JsonResponse(jsonresponse,safe=False)
-            else:
-                jsonresponse = {"code":"NE-400","message":"Bad request"}
+        votanteDB = models.Votante.objects.values().filter(idVotante=id)
+        if votanteDB.exists(): 
+            votanteRequest = JSONParser().parse(request)
+            if updateVotante(id,votanteRequest):
+                jsonresponse = {"code":"NE-200","message":"Success"}
                 return JsonResponse(jsonresponse,safe=False)
+            jsonresponse = {"code":"NE-500","message":"Lo siento. Algo salió mal"}
+            return JsonResponse(jsonresponse,safe=False)
         else:
             jsonresponse = {"code":"NE-404","message":"Not found"}
             return JsonResponse(jsonresponse,safe=False)
