@@ -1,4 +1,5 @@
-import string, random, jwt, datetime
+import string, random
+from Utils import jwt
 from hashlib import sha256
 from threading import Thread
 from django.shortcuts import render
@@ -13,6 +14,8 @@ from App.Votante.models import Votante, Tipo_Votante
 from App.Votante.serializers import VotanteSerializer, TipoVotanteSerializer
 from App.Jornada import models, serializers
 
+jwToken = jwt.JsonWebToken()
+
 class EmailThread(Thread):
     def __init__(self,email):
         self.email = email
@@ -20,44 +23,6 @@ class EmailThread(Thread):
 
     def run(self):
         self.email.send(fail_silently=False)
-
-def reverseCode(code):
-    reverse = ""
-    for element in code:
-        reverse = element + reverse
-    return reverse
-
-def generateSecret(access_code, market):
-    init = ""
-    final = ""
-    length = len(access_code)
-    for index in range(0, length):
-        if (index < market):
-            init += access_code[index]
-        if (index >= length - market):
-            final += access_code[index]
-    return reverseCode(final)+access_code+reverseCode(init)
-
-def generateJWT(secret):
-    current_time = datetime.datetime.now(datetime.timezone.utc)
-    issuedAt = current_time.timestamp()
-    expirationTime = issuedAt + (30 * 60)
-
-    payload = {
-        'exp':expirationTime,
-        'iat':issuedAt
-    }
-
-    return jwt.encode(payload, secret, algorithm='HS256')
-
-def validateJWT(jwtoken, secret):
-    try:
-        jwt.decode(jwtoken, secret, algorithms=["HS256"])
-        return {'code':'NE-200','message':'Success'}
-    except jwt.ExpiredSignatureError:
-        return  {'code':'NE-401','message':'No autorizado. El tiempo de uso del token ha expirado.'}
-    except jwt.InvalidSignatureError:
-        return  {'code':'NE-401','message':'No autorizado. El token ha sido modificado.'}
 
 def getallTipos():
     try:
@@ -196,12 +161,12 @@ def accessCode(request):
         usuario = models.Votante.objects.values().filter(correoInstitucional=email)[0]
         if usuario['access_code'] == code:
             idvotante = usuario['idVotante']
-            jwtoken = generateJWT(generateSecret(code, 3))
+            token = jwToken.generateJWT(jwToken.generateSecret(code,3))
             votanteDB = Votante.objects.get(idVotante = idvotante)
-            votanteDB.jwtoken = jwtoken
+            votanteDB.jwtoken = token
             votanteDB.save()
             response = {
-                'token':jwtoken,
+                'token':token,
                 'idVotante':idvotante,
                 'nombreVotante':usuario['nombreVotante'],
                 'votos':getJornadasByVotante(idvotante)

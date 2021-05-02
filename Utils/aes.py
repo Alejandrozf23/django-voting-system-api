@@ -27,9 +27,3 @@ class AES_CBC:
         cipher = AES.new(key, AES.MODE_CBC, iv)
         plainText = unpad(cipher.decrypt(cipherText), AES.block_size)
         return plainText.decode()
-
-aes_mode_cbc = AES_CBC()
-key = aes_mode_cbc.generateKey(16)
-result = aes_mode_cbc.encrypt('HOLA MUNDO', key)
-plainText = aes_mode_cbc.decrypt(result,key)
-print(plainText)
