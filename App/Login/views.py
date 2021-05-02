@@ -1,4 +1,4 @@
-import string,random
+import string, random, jwt, datetime
 from hashlib import sha256
 from threading import Thread
 from django.shortcuts import render
@@ -8,10 +8,10 @@ from django.conf import settings
 from rest_framework.parsers import JSONParser
 from django.template.loader import get_template
 from django.core.mail import EmailMultiAlternatives
-from App.Administrador import models,serializers
-from App.Votante.models import Votante,Tipo_Votante
-from App.Votante.serializers import VotanteSerializer,TipoVotanteSerializer
-from App.Jornada import models,serializers
+from App.Administrador import models, serializers
+from App.Votante.models import Votante, Tipo_Votante
+from App.Votante.serializers import VotanteSerializer, TipoVotanteSerializer
+from App.Jornada import models, serializers
 
 class EmailThread(Thread):
     def __init__(self,email):
@@ -20,6 +20,44 @@ class EmailThread(Thread):
 
     def run(self):
         self.email.send(fail_silently=False)
+
+def reverseCode(code):
+    reverse = ""
+    for element in code:
+        reverse = element + reverse
+    return reverse
+
+def generateSecret(access_code, market):
+    init = ""
+    final = ""
+    length = len(access_code)
+    for index in range(0, length):
+        if (index < market):
+            init += access_code[index]
+        if (index >= length - market):
+            final += access_code[index]
+    return reverseCode(final)+access_code+reverseCode(init)
+
+def generateJWT(secret):
+    current_time = datetime.datetime.now(datetime.timezone.utc)
+    issuedAt = current_time.timestamp()
+    expirationTime = issuedAt + (30 * 60)
+
+    payload = {
+        'exp':expirationTime,
+        'iat':issuedAt
+    }
+
+    return jwt.encode(payload, secret, algorithm='HS256')
+
+def validateJWT(jwtoken, secret):
+    try:
+        jwt.decode(jwtoken, secret, algorithms=["HS256"])
+        return {'code':'NE-200','message':'Success'}
+    except jwt.ExpiredSignatureError:
+        return  {'code':'NE-401','message':'No autorizado. El tiempo de uso del token ha expirado.'}
+    except jwt.InvalidSignatureError:
+        return  {'code':'NE-401','message':'No autorizado. El token ha sido modificado.'}
 
 def getallTipos():
     try:
@@ -68,7 +106,7 @@ def sendMailCode(code,user,mail,asunto):
     EmailThread(email).start()
 
 def generateAccessCode(length,user,email):
-    code = ''.join(random.choice(string.digits) for x in range(length))
+    code = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
     sendMailCode(code,user,email,'Código de acceso')
     return code
 
@@ -125,7 +163,7 @@ def getLogin(request):
             if usuario.exists():
                 if email==usuario[0]['correoInstitucional'] and password==usuario[0]['password']:
                     consult = Votante.objects.get(idVotante=usuario[0]['idVotante'])
-                    consult.access_code = generateAccessCode(6,usuario[0]['nombreVotante'],email)
+                    consult.access_code = generateAccessCode(10,usuario[0]['nombreVotante'],email)
                     consult.save()
                     jsonresponse = {'code':'NE-200','message':'Success'}
                     return JsonResponse(jsonresponse,safe=False)
@@ -158,7 +196,12 @@ def accessCode(request):
         usuario = models.Votante.objects.values().filter(correoInstitucional=email)[0]
         if usuario['access_code'] == code:
             idvotante = usuario['idVotante']
+            jwtoken = generateJWT(generateSecret(code, 3))
+            votanteDB = Votante.objects.get(idVotante = idvotante)
+            votanteDB.jwtoken = jwtoken
+            votanteDB.save()
             response = {
+                'token':jwtoken,
                 'idVotante':idvotante,
                 'nombreVotante':usuario['nombreVotante'],
                 'votos':getJornadasByVotante(idvotante)
