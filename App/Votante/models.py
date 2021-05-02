@@ -13,7 +13,8 @@ class Votante(models.Model):
     password = models.CharField(max_length=64,null=False,blank=False)
     tipo = models.ForeignKey(Tipo_Votante,on_delete=models.CASCADE)
     correoAdministrador = models.ForeignKey(Administrador,on_delete=models.CASCADE)
-    access_code = models.CharField(max_length=6,null=False)
+    access_code = models.CharField(max_length=10,null=False)
+    jwtoken = models.CharField(max_length=256,null=True)
     
     def __str__(self):
         return self.nombreVotante

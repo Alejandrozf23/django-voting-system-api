@@ -69,7 +69,8 @@ def buildNewVotante(votante):
         'correoAdministrador':votante['correoAdministrador'],
         'password':password,
         'tipo':votante['tipo'],
-        'access_code':'012345'
+        'access_code':'012345',
+        'jwtoken':None
     }
     return None if password == None else record
 
