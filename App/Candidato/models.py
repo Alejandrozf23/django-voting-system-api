@@ -3,7 +3,7 @@ from App.Administrador.models import Administrador
 
 # Create your models here.
 class Candidato(models.Model):
-    idCandidato = models.CharField(primary_key=True,null=False,blank=False,max_length=11)
+    idCandidato = models.CharField(primary_key=True,null=False,blank=False,max_length=255)
     nombreCandidato = models.CharField(max_length=50,null=False)
     propuestasGenerales = models.CharField(max_length=500)
     propuestaArchivo = models.TextField(null=False)
