@@ -10,16 +10,17 @@ from .serializers import CandidatoSerializer
 from App.Jornada.models import Jornada,Jornada_candidato
 
 def get_idCandidato(candidato):
-    return candidato.get('idCandidato')
+    return int(candidato.get('idCandidato'))
 
-def getidCandidato(nombre):
+def getidCandidato():
     candidatos = Candidato.objects.values()
     candidatos = list(candidatos)
     if len(candidatos) == 0:
         return str(1)
     else:
         candidatos.sort(key=get_idCandidato, reverse=True)
-        newId = int(candidatos[0]['idCandidato']) << 12
+        new_id = int(candidatos[0]['idCandidato']) << 12
+        print(new_id)
     # dates = date.today()
     # norandom = randint(0,100)
     # splitname = nombre.split(' ')
@@ -28,7 +29,7 @@ def getidCandidato(nombre):
     # year = str(dates.year)[2]+str(dates.year)[3]
     # month = '0'+str(dates.month) if int(dates.month)<10 else str(dates.month)
     # day = '0'+str(dates.day) if int(dates.day)<10 else str(dates.day)
-    return str(newId)
+    return str(new_id)
 
 def getDateFormat(actualDate):
     date = actualDate.split(' ')[0].split('/')
@@ -114,7 +115,7 @@ def getCandidato(request):
     
     if request.method == 'POST':
         candidato = JSONParser().parse(request)
-        idcandidato = getidCandidato(candidato['nombreCandidato'])
+        idcandidato = getidCandidato()
         candidato_serializer = CandidatoSerializer(data=buildNewCandidato(idcandidato,candidato,candidato['correoAdministrador']))
         if candidato_serializer.is_valid():
             if saveCandidatointoDB(candidato_serializer):
