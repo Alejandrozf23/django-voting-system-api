@@ -4,7 +4,7 @@ from .models import Jornada,Jornada_candidato,Jornada_votante,Tipo_jornada
 class JornadaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Jornada
-        fields = ('idJornada','nombreJornada','fechaInicio','fechaFinal','correoAdministrador','tipoJornada','hdatos','hjornada','hcandidatos','n','g')
+        fields = ('idJornada','nombreJornada','fechaInicio','fechaFinal','correoAdministrador','tipoJornada','datos','jornada','candidatos','n','g')
 
 class JornadaCandidatoSerializer(serializers.ModelSerializer):
     class Meta:

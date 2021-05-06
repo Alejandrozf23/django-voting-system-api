@@ -57,13 +57,15 @@ def getCandidatosByJornada(idjornada):
 def getJornadaWithCandididatos(idjornada):
     listcandidatos = getCandidatosByJornada(idjornada)
     jornada = models.Jornada.objects.values().filter(idJornada=idjornada)
+    publicKey = {'n':jornada[0]['n'],'g':jornada[0]['g']}
     record = {
         'idJornada':jornada[0]['idJornada'],
         'nombreJornada':jornada[0]['nombreJornada'],
         'correoAdministrador':jornada[0]['correoAdministrador_id'],
         'fechaInicio':jornada[0]['fechaInicio'],
-        'fechaFinal':jornada[0]['fechaFinal'], 
-        "candidatos":listcandidatos,
+        'fechaFinal':jornada[0]['fechaFinal'],
+        'publicKey':publicKey,
+        "candidatos":listcandidatos
     }
     return record
 
@@ -83,6 +85,9 @@ def buildNewJornada(idjornada,nueva_jornada):
         'fechaFinal':nueva_jornada['fechaFinal'],
         'correoAdministrador':nueva_jornada['correoAdministrador'],
         'tipoJornada':nueva_jornada['tipoJornada'],
+        'datos':None,
+        'jornada':None,
+        'candidatos':None,
         'n':publicKey['n'],
         'g':publicKey['g']
     }
