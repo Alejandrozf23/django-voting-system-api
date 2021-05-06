@@ -20,7 +20,6 @@ def getidCandidato():
     else:
         candidatos.sort(key=get_idCandidato, reverse=True)
         new_id = int(candidatos[0]['idCandidato']) << 12
-        print(new_id)
     # dates = date.today()
     # norandom = randint(0,100)
     # splitname = nombre.split(' ')
