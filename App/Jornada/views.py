@@ -74,14 +74,17 @@ def getTypesOfCandidatos():
         kindof.append({"clave":tipos[i]['claveTipoJornada'],"descripcion":tipos[i]['descripcionTipoJornada']})
     return kindof
 
-def buildNewJornada(idjornada,nueva_jornada):        
+def buildNewJornada(idjornada,nueva_jornada):    
+    publicKey = nueva_jornada['publicKey']
     njornada = {
         'idJornada':idjornada,
         'nombreJornada':nueva_jornada['nombreJornada'],
         'fechaInicio':nueva_jornada['fechaInicio'],
         'fechaFinal':nueva_jornada['fechaFinal'],
         'correoAdministrador':nueva_jornada['correoAdministrador'],
-        'tipoJornada':nueva_jornada['tipoJornada']
+        'tipoJornada':nueva_jornada['tipoJornada'],
+        'n':publicKey['n'],
+        'g':publicKey['g']
     }
     return njornada
 

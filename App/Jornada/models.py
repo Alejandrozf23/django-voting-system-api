@@ -15,6 +15,8 @@ class Jornada(models.Model):
     fechaFinal = models.CharField(max_length=150,null=False,default="00/00/0000 00:00:00")
     correoAdministrador = models.ForeignKey(Administrador,on_delete=models.CASCADE)
     tipoJornada = models.ForeignKey(Tipo_jornada,on_delete=models.CASCADE)
+    n = models.TextField(null=True)
+    g = models.TextField(null=True)
 
     class Meta:
         verbose_name = "Jornada"
