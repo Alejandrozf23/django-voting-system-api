@@ -161,6 +161,7 @@ def accessCode(request):
         usuario = models.Votante.objects.values().filter(correoInstitucional=email)[0]
         if usuario['access_code'] == code:
             idvotante = usuario['idVotante']
+            tipoVotante = usuario['tipo_id']
             token = jwToken.generateJWT(jwToken.generateSecret(code,3))
             votanteDB = Votante.objects.get(idVotante = idvotante)
             votanteDB.jwtoken = token
@@ -168,6 +169,7 @@ def accessCode(request):
             response = {
                 'token':token,
                 'idVotante':idvotante,
+                'tipoVotante':tipoVotante,
                 'nombreVotante':usuario['nombreVotante'],
                 'votos':getJornadasByVotante(idvotante)
             }
