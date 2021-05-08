@@ -1,3 +1,6 @@
+import json, requests
+from Utils import jwt
+from hashlib import sha256
 from django.shortcuts import render
 from django.core import serializers
 from django.http import JsonResponse
@@ -6,8 +9,10 @@ from App.Candidato.models import Candidato
 from App.Candidato.serializers import CandidatoSerializer
 from App.Votante.models import Votante,Tipo_Votante
 from App.Votante.serializers import VotanteSerializer
-from App.Jornada.models import Jornada_votante,Jornada,Jornada_candidato
-from App.Jornada.serializers import JornadaVotanteSerializer,JornadaCandidatoSerializer,JornadaSerializer
+from App.Jornada.models import Jornada_votante,Jornada,Jornada_candidato,Resultados
+from App.Jornada.serializers import JornadaVotanteSerializer,JornadaCandidatoSerializer,JornadaSerializer,ResultadosSerializer
+
+jwToken = jwt.JsonWebToken()
 
 # Create your views here.
 def getAllVotos(idcandidato,idjornada):
@@ -85,12 +90,11 @@ def validateEntidadesToVote(idCandidato,idVotante,idJornada):
     jornada_votante = Jornada_votante.objects.values().filter(idJornada=idJornada,idVotante=idVotante)
     return True if votante.exists() and candidato.exists() and jornada_candidato.exists() and not jornada_votante.exists() else False
 
-def buildJornadaVotante(idJornada,idVotante,idCandidato):
+def buildJornadaVotante(idJornada,idVotante):
     jornadaVotante = {
         'idJornadaVotante':str(idJornada)+str(idVotante),
         'idVotante':idVotante,
-        'idJornada':str(idJornada),
-        'idCandidato':idCandidato
+        'idJornada':str(idJornada)
     }
     return jornadaVotante
 
@@ -100,6 +104,17 @@ def saveJornadaVotante(jornadaVotante_serializers):
         return True
     except:
         return False
+
+def validateToken(jwtoken, votante):
+    secret = jwToken.generateSecret(votante['access_code'],3)
+    return jwToken.validateJWT(jwtoken, secret)
+
+def validateRequest(tipoVotante, idVotante, idCandidato, access_code, firma):
+    message = tipoVotante+idVotante+idCandidato+access_code
+    hashSign = sha256(message.encode('utf-8')).hexdigest()
+    if hashSign == firma:
+        return True
+    return False
 
 def getVotaciones(request,id):
     if request.method == 'GET':
@@ -117,21 +132,34 @@ def getVotaciones(request,id):
         return JsonResponse(jsonresponse,safe=False)
     
     if request.method == 'POST':        
-        datarequest = JSONParser().parse(request)
-        idVotante = datarequest['idVotante']
-        idCandidato = datarequest['idCandidato']        
+        data = JSONParser().parse(request)
+        #datarequest = json.loads(data['data'])
+        datarequest = data       
+        headers = request.headers
         
-        if validateEntidadesToVote(idCandidato,idVotante,id):
-            jornadaVotante_serializers = JornadaVotanteSerializer(data=buildJornadaVotante(id,idVotante,idCandidato))
-            if jornadaVotante_serializers.is_valid(): 
-                if saveJornadaVotante(jornadaVotante_serializers):
-                    jsonresponse = {'code':'NE-200','message':'Success'}
-                    return JsonResponse(jsonresponse,safe=False)
-                else:
-                    jsonresponse = {'code':'NE-500','message':'Lo siento. Algo salió mal'}
-                    return JsonResponse(jsonresponse,safe=False)
+        authorization = headers['Authorization']
+        firma = headers['Firma']
+        tipoVotante = datarequest['tipoVotante']
+        idVotante = datarequest['idVotante']
+        idCandidato = datarequest['idCandidato'] 
+        
+        votante = Votante.objects.values().filter(idVotante = idVotante)[0]
+        responseToken = validateToken(authorization, votante)
+
+        if not responseToken['code'] == 'NE-200':
+            return JsonResponse(responseToken)
+        
+        if not validateRequest(tipoVotante, idVotante, idCandidato, votante['access_code'], firma):
+            jsonresponse = {'code':'NE-401','message':'El mensaje ha sido modificado'}
+            return JsonResponse(jsonresponse,safe=False)
+        
+        jornadaVotante_serializers = JornadaVotanteSerializer(data=buildJornadaVotante(id,idVotante))
+        if jornadaVotante_serializers.is_valid(): 
+            if saveJornadaVotante(jornadaVotante_serializers):
+                jsonresponse = {'code':'NE-200','message':'Success'}
+                return JsonResponse(jsonresponse,safe=False)
             else:
-                jsonresponse = {'code':'NE-400','message':'Bad request'}
+                jsonresponse = {'code':'NE-500','message':'Lo siento. Algo salió mal'}
                 return JsonResponse(jsonresponse,safe=False)
         else:
             jsonresponse = {'code':'NE-400','message':'Bad request'}
