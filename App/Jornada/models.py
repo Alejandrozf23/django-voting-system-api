@@ -1,7 +1,7 @@
 from django.db import models
 from App.Administrador.models import Administrador
 from App.Candidato.models import Candidato
-from App.Votante.models import Votante
+from App.Votante.models import Votante, Tipo_Votante
 
 # Create your models here.
 class Tipo_jornada(models.Model):
@@ -40,7 +40,12 @@ class Jornada_votante(models.Model):
     idJornadaVotante = models.CharField(primary_key=True,null=False,blank=False,max_length=22)
     idJornada = models.ForeignKey(Jornada,on_delete=models.CASCADE,db_column='idJornada')
     idVotante = models.ForeignKey(Votante,on_delete=models.CASCADE,db_column='idVotante')
-    idCandidato  = models.ForeignKey(Candidato,on_delete=models.CASCADE,db_column='idCandidato')
-
     class Meta:
         unique_together = (('idJornada','idVotante'),)
+
+class Resultados(models.Model):
+    idResultados = models.AutoField(primary_key=True,null=False,blank=False)
+    idJornada = models.ForeignKey(Jornada,on_delete=models.CASCADE,db_column='idJornada')
+    idCandidato  = models.ForeignKey(Candidato,on_delete=models.CASCADE,db_column='idCandidato')
+    tipoVotante = models.ForeignKey(Tipo_Votante,on_delete=models.CASCADE,db_column='tipoVotante')
+    noRastreo = models.CharField(max_length=64,null=False,blank=False,db_column='noRastreo')

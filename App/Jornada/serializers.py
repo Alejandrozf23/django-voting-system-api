@@ -1,5 +1,5 @@
 from rest_framework import serializers 
-from .models import Jornada,Jornada_candidato,Jornada_votante,Tipo_jornada
+from .models import Jornada,Jornada_candidato,Jornada_votante,Tipo_jornada,Resultados
  
 class JornadaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -14,7 +14,12 @@ class JornadaCandidatoSerializer(serializers.ModelSerializer):
 class JornadaVotanteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Jornada_votante
-        fields = ('idJornadaVotante','idJornada','idVotante','idCandidato')
+        fields = ('idJornadaVotante','idJornada','idVotante')
+
+class ResultadosSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resultados
+        fields = ('idResultados','idJornada','idCandidato','tipoVotante','noRastreo')
 
 class TipoJornadaSerializer(serializers.ModelSerializer):
     class Meta:
