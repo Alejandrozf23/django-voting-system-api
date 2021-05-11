@@ -44,8 +44,7 @@ class Jornada_votante(models.Model):
         unique_together = (('idJornada','idVotante'),)
 
 class Resultados(models.Model):
-    idResultados = models.AutoField(primary_key=True,null=False,blank=False)
+    noRastreo = models.CharField(primary_key=True,max_length=64,null=False,blank=False,db_column='noRastreo')
     idJornada = models.ForeignKey(Jornada,on_delete=models.CASCADE,db_column='idJornada')
-    idCandidato  = models.ForeignKey(Candidato,on_delete=models.CASCADE,db_column='idCandidato')
+    idCandidato  = models.TextField(null=False,blank=False,db_column='idCandidato')
     tipoVotante = models.ForeignKey(Tipo_Votante,on_delete=models.CASCADE,db_column='tipoVotante')
-    noRastreo = models.CharField(max_length=64,null=False,blank=False,db_column='noRastreo')
