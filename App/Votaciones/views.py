@@ -98,9 +98,26 @@ def buildJornadaVotante(idJornada,idVotante):
     }
     return jornadaVotante
 
+def buildResultados(idJornada, idCandidato, tipoVotante):
+    noRastreo = sha256(idCandidato.encode('utf-8')).hexdigest()
+    resultados = {
+        'noRastreo':noRastreo,
+        'idJornada':idJornada,
+        'idCandidato':idCandidato,
+        'tipoVotante':tipoVotante
+    }
+    return resultados
+
 def saveJornadaVotante(jornadaVotante_serializers):
     try:
         jornadaVotante_serializers.save()
+        return True
+    except:
+        return False
+
+def saveResultados(resultados_serializers):
+    try:
+        resultados_serializers.save()
         return True
     except:
         return False
@@ -133,8 +150,7 @@ def getVotaciones(request,id):
     
     if request.method == 'POST':        
         data = JSONParser().parse(request)
-        #datarequest = json.loads(data['data'])
-        datarequest = data       
+        datarequest = json.loads(data['data'])
         headers = request.headers
         
         authorization = headers['Authorization']
@@ -153,10 +169,12 @@ def getVotaciones(request,id):
             jsonresponse = {'code':'NE-401','message':'El mensaje ha sido modificado'}
             return JsonResponse(jsonresponse,safe=False)
         
+        resultados = buildResultados(id,idCandidato,tipoVotante)
         jornadaVotante_serializers = JornadaVotanteSerializer(data=buildJornadaVotante(id,idVotante))
-        if jornadaVotante_serializers.is_valid(): 
-            if saveJornadaVotante(jornadaVotante_serializers):
-                jsonresponse = {'code':'NE-200','message':'Success'}
+        resultados_serializers = ResultadosSerializer(data=resultados)
+        if jornadaVotante_serializers.is_valid() and resultados_serializers.is_valid(): 
+            if saveJornadaVotante(jornadaVotante_serializers) and saveResultados(resultados_serializers):
+                jsonresponse = {'noRastreo':resultados['noRastreo']}
                 return JsonResponse(jsonresponse,safe=False)
             else:
                 jsonresponse = {'code':'NE-500','message':'Lo siento. Algo salió mal'}
