@@ -19,7 +19,7 @@ class JornadaVotanteSerializer(serializers.ModelSerializer):
 class ResultadosSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resultados
-        fields = ('idResultados','idJornada','idCandidato','tipoVotante','noRastreo')
+        fields = ('noRastreo','idJornada','idCandidato','tipoVotante')
 
 class TipoJornadaSerializer(serializers.ModelSerializer):
     class Meta:
