@@ -1,5 +1,5 @@
 import json, requests
-from Utils import jwt
+from Utils import jwt, aes
 from hashlib import sha256
 from django.shortcuts import render
 from django.core import serializers
@@ -13,6 +13,7 @@ from App.Jornada.models import Jornada_votante,Jornada,Jornada_candidato,Resulta
 from App.Jornada.serializers import JornadaVotanteSerializer,JornadaCandidatoSerializer,JornadaSerializer,ResultadosSerializer
 
 jwToken = jwt.JsonWebToken()
+aesImpl = aes.AES_CBC()
 
 # Create your views here.
 def getAllVotos(idcandidato,idjornada):
@@ -133,6 +134,11 @@ def validateRequest(tipoVotante, idVotante, idCandidato, access_code, firma):
         return True
     return False
 
+def getPlainText(data, idVotante):
+    code = Votante.objects.get(idVotante=idVotante)['access_code']
+    key = jwToken.generateSecret(code,16)
+    return aesImpl.decrypt(data,key)
+
 def getVotaciones(request,id):
     if request.method == 'GET':
         votosTotales = Jornada_candidato.objects.values().filter(idJornada=id)
@@ -150,13 +156,15 @@ def getVotaciones(request,id):
     
     if request.method == 'POST':        
         data = JSONParser().parse(request)
-        datarequest = json.loads(data['data'])
+        idVotante = data['idVotante']
+        cipherText = data['data']
+        plainText = getPlainText(cipherText,idVotante)
+        datarequest = json.loads(plainText)
         headers = request.headers
         
         authorization = headers['Authorization']
         firma = headers['Firma']
         tipoVotante = datarequest['tipoVotante']
-        idVotante = datarequest['idVotante']
         idCandidato = datarequest['idCandidato'] 
         
         votante = Votante.objects.values().filter(idVotante = idVotante)[0]
