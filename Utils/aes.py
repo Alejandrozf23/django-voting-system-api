@@ -3,6 +3,11 @@ from base64 import b64encode, b64decode
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad, unpad
 
+BLOCK_SIZE = 16
+
+def unpad(data):
+    return data[:-data[-1]]
+
 class AES_CBC:
     @staticmethod
     def generateKey(size_key):
@@ -21,9 +26,8 @@ class AES_CBC:
         return result
 
     @staticmethod
-    def decrypt(result, key):
-        iv = b64decode(result['iv'])
-        cipherText = b64decode(result['ct'])
-        cipher = AES.new(key, AES.MODE_CBC, iv)
-        plainText = unpad(cipher.decrypt(cipherText), AES.block_size)
-        return plainText.decode()
+    def decrypt(encrypted, key):
+        encrypted = b64decode(encrypted)
+        IV = encrypted[:BLOCK_SIZE]
+        aes = AES.new(key, AES.MODE_CBC, IV)
+        return unpad(aes.decrypt(encrypted[BLOCK_SIZE:]))
