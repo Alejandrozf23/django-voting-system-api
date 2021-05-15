@@ -1,16 +1,15 @@
 import json, requests
 from Utils import jwt, aes
 from hashlib import sha256
-from django.shortcuts import render
 from django.core import serializers
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from App.Candidato.models import Candidato
-from App.Candidato.serializers import CandidatoSerializer
-from App.Votante.models import Votante,Tipo_Votante
-from App.Votante.serializers import VotanteSerializer
-from App.Jornada.models import Jornada_votante,Jornada,Jornada_candidato,Resultados
-from App.Jornada.serializers import JornadaVotanteSerializer,JornadaCandidatoSerializer,JornadaSerializer,ResultadosSerializer
+from App.Votaciones.models import Votos
+from App.Votante.models import Votante, Tipo_Votante
+from App.Jornada.models import Jornada_votante, Jornada, Jornada_candidato
+from App.Votaciones.serializers import VotosSerializer
+from App.Jornada.serializers import JornadaVotanteSerializer, ResultadosSerializer
 
 jwToken = jwt.JsonWebToken()
 aesImpl = aes.AES_CBC()
@@ -123,6 +122,13 @@ def saveResultados(resultados_serializers):
     except:
         return False
 
+def saveVotos(votos_serializers):
+    try:
+        votos_serializers.save()
+        return True
+    except:
+        return False
+
 def validateToken(jwtoken, votante):
     secret = jwToken.generateSecret(votante['access_code'],3)
     return jwToken.validateJWT(jwtoken, secret)
@@ -138,6 +144,27 @@ def getPlainText(data, idVotante):
     code = Votante.objects.get(idVotante=idVotante)['access_code']
     key = jwToken.generateSecret(code,16)
     return aesImpl.decrypt(data,key)
+
+def buildVotos(idJornada, data):
+    for i in range(len(data)):
+        tipoVotante = data[i]['tipoVotante']
+        votosByCandidato = data[i]['votos']
+        for i in range(len(votosByCandidato)):
+            idCandidato = votosByCandidato[i]['idCandidato']
+            votos = votosByCandidato[i]['noVotos']
+            resultados = {
+                'idJornada':idJornada,
+                'idCandidato':idCandidato,
+                'tipoVotante':tipoVotante,
+                'noVotos':votos
+            }
+            votos_serializer = VotosSerializer(data=resultados)
+            if (votos_serializer.is_valid()):
+                try:
+                    votos_serializer.save()
+                except:
+                    return False
+    return True
 
 def getVotaciones(request,id):
     if request.method == 'GET':
@@ -190,3 +217,16 @@ def getVotaciones(request,id):
         else:
             jsonresponse = {'code':'NE-400','message':'Bad request'}
             return JsonResponse(jsonresponse,safe=False)
+
+def getResultados(request, id):
+    if request.method == 'GET':
+        jsonresponse = {'code':'NE-400','message':'Bad request'}
+        return JsonResponse(jsonresponse,safe=False)
+    
+    if request.method == 'POST':
+        data = JSONParser().parse(request)
+        if not buildVotos(id, data):
+            jsonresponse = {'code':'NE-400','message':'Bad request'}
+            return JsonResponse(jsonresponse,safe=False)
+        jsonresponse = {'code':'NE-200','message':'Se ha realizado correctamente la operación'}
+        return JsonResponse(jsonresponse,safe=False)
