@@ -166,6 +166,67 @@ def buildVotos(idJornada, data):
                     return False
     return True
 
+def getVotosTotalesByCandidato(votos, candidato):
+    noVotos = 0
+    for i in range(len(votos)):
+        if candidato == votos[i]['idCandidato_id']:
+            noVotos += int(votos[i]['noVotos'])
+    return noVotos
+
+def getVotosParcialesByTipo(votos, tipo, idCandidato):
+    noVotos = 0
+    for i in range(len(votos)):
+        if votos[i]['idCandidato_id'] == idCandidato and votos[i]['tipoVotante_id'] == tipo:
+            noVotos = votos[i]['noVotos']
+            break
+    return noVotos
+
+def getVotosParcialesByCandidato(votos, tipo, candidatos):
+    parciales = []
+    for i in range(len(candidatos)):
+        parciales.append({'nombreCandidato':candidatos[i]['nombre'], 'noVotos':getVotosParcialesByTipo(votos, tipo, candidatos[i]['id'])})
+    return parciales
+
+def getVotosByJornada(votos):
+    totales = []
+    parciales = []
+    candidatos = []
+    tiposVotantes = []
+    
+    for i in range(len(votos)):
+        idCandidato = votos[i]['idCandidato_id']
+        idTipoVotante = votos[i]['tipoVotante_id']
+        tipo = Tipo_Votante.objects.values().filter(idtipovotante = idTipoVotante)[0]['tipo']
+        nombre = Candidato.objects.values().filter(idCandidato = idCandidato)[0]['nombreCandidato']
+        
+        flag = False
+        for j in range(len(candidatos)):
+            if candidatos[j]['id'] == idCandidato:
+                flag = True
+                break
+        if not flag:
+            candidatos.append({'id':idCandidato, 'nombre':nombre})
+        
+        flag = False
+        for j in range(len(tiposVotantes)):
+            if tiposVotantes[j]['id'] == idTipoVotante:
+                flag = True
+                break
+        if not flag:
+            tiposVotantes.append({'id':idTipoVotante, 'tipo':tipo})
+        
+    for i in range(len(candidatos)):
+        totales.append({'nombreCandidato':candidatos[i]['nombre'], 'noVotos':getVotosTotalesByCandidato(votos, candidatos[i]['id'])})
+    
+    for i in range(len(tiposVotantes)):
+        parciales.append({'tipoVotante':tiposVotantes[i]['tipo'], 'votos':getVotosParcialesByCandidato(votos, tiposVotantes[i]['id'], candidatos)})
+
+    resultados = {
+        'totales': totales,
+        'parciales': parciales
+    }
+    return resultados
+    
 def getVotaciones(request,id):
     if request.method == 'GET':
         votosTotales = Jornada_candidato.objects.values().filter(idJornada=id)
@@ -220,8 +281,14 @@ def getVotaciones(request,id):
 
 def getResultados(request, id):
     if request.method == 'GET':
-        jsonresponse = {'code':'NE-400','message':'Bad request'}
-        return JsonResponse(jsonresponse,safe=False)
+        votos = Votos.objects.values().filter(idJornada=id)
+        if votos.exists():
+            jsonresponse = getVotosByJornada(votos)
+            return JsonResponse(jsonresponse,safe=False)
+        else:
+            jsonresponse = {'code':'NE-400','message':'Bad request'}
+            return JsonResponse(jsonresponse,safe=False)
+        
     
     if request.method == 'POST':
         data = JSONParser().parse(request)
