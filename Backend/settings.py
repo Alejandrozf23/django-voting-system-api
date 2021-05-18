@@ -94,6 +94,8 @@ USE_TZ = True
 STATIC_URL = '/static/'
 CORS_ORIGIN_ALLOW_ALL=True
 
+CORS_ALLOW_HEADERS = ('content-disposition','accept-encoding','content-type','accept','origin','Authorization','Firma')
+
 LOGIN = config('HOST_LOGIN')
 EMAIL_HOST = config('EMAIL_SERVER')
 EMAIL_PORT = config('EMAIL_PORT')
