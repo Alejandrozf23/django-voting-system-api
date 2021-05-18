@@ -1,4 +1,3 @@
-import json,sys
 from datetime import date
 from django.shortcuts import render
 from django.core import serializers
@@ -7,7 +6,7 @@ from django.http import JsonResponse
 from . import models
 from . import serializers
 from App.Candidato.models import Candidato
-from App.Candidato.serializers import CandidatoSerializer
+from App.Votaciones.models import Votos
 
 # Create your views here.
 def getallJornada():
@@ -58,6 +57,7 @@ def getJornadaWithCandididatos(idjornada):
     listcandidatos = getCandidatosByJornada(idjornada)
     jornada = models.Jornada.objects.values().filter(idJornada=idjornada)
     publicKey = {'n':jornada[0]['n'],'g':jornada[0]['g']}
+    votos = len(Votos.objects.values().filter(idJornada=idjornada))>0
     record = {
         'idJornada':jornada[0]['idJornada'],
         'nombreJornada':jornada[0]['nombreJornada'],
@@ -65,7 +65,8 @@ def getJornadaWithCandididatos(idjornada):
         'fechaInicio':jornada[0]['fechaInicio'],
         'fechaFinal':jornada[0]['fechaFinal'],
         'publicKey':publicKey,
-        "candidatos":listcandidatos
+        'candidatos':listcandidatos,
+        'descifrado':votos
     }
     return record
 
