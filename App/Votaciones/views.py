@@ -160,7 +160,7 @@ def getVotosByTipoVotante(tipoVotantes, n):
     parciales = []
     for i in range(len(tipoVotantes)):
         tipo = tipoVotantes[i]['idtipovotante']
-        parciales.append({'tipoVotante':tipo, 'votos':multiplicacionVotos(tipo, n)})
+        parciales.append({'tipoVotante':tipo, 'votos':str(multiplicacionVotos(tipo, n))})
     return parciales
 
 def getResultadosByPaillier(idJornada):
