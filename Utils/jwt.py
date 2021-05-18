@@ -17,7 +17,7 @@ class JsonWebToken:
                 init += access_code[index]
             if (index >= length - market):
                 final += access_code[index]
-        return reverseCode(final)+access_code+reverseCode(init)
+        return access_code+init+final
 
     @staticmethod
     def generateJWT(secret):
