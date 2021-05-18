@@ -1,11 +1,9 @@
-import json,sys,random,string
+import random, string
 from hashlib import sha256
-from datetime import date
 from threading import Thread
 from django.conf import settings
 from django.template.loader import get_template
 from django.core.mail import EmailMultiAlternatives
-from django.shortcuts import render
 from django.core import serializers
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser

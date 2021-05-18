@@ -1,10 +1,6 @@
-import json,sys
-from datetime import date,datetime
-from django.shortcuts import render
-from django.core import serializers
+from datetime import datetime
 from rest_framework.parsers import JSONParser
 from django.http import JsonResponse
-from random import randint,random
 from .models import Candidato
 from .serializers import CandidatoSerializer
 from App.Jornada.models import Jornada,Jornada_candidato

@@ -1,7 +1,6 @@
-import json, requests
+import json
 from Utils import jwt, aes
 from hashlib import sha256
-from django.core import serializers
 from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from App.Candidato.models import Candidato

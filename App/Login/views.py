@@ -2,17 +2,15 @@ import string, random
 from Utils import jwt
 from hashlib import sha256
 from threading import Thread
-from django.shortcuts import render
-from django.core import serializers
 from django.http import JsonResponse
 from django.conf import settings
 from rest_framework.parsers import JSONParser
 from django.template.loader import get_template
 from django.core.mail import EmailMultiAlternatives
-from App.Administrador import models, serializers
+from App.Administrador import models
 from App.Votante.models import Votante, Tipo_Votante
-from App.Votante.serializers import VotanteSerializer, TipoVotanteSerializer
-from App.Jornada import models, serializers
+from App.Votante.serializers import TipoVotanteSerializer
+from App.Jornada import models
 
 jwToken = jwt.JsonWebToken()
 

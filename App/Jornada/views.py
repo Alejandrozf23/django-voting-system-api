@@ -1,5 +1,4 @@
 from datetime import date
-from django.shortcuts import render
 from django.core import serializers
 from rest_framework.parsers import JSONParser
 from django.http import JsonResponse
