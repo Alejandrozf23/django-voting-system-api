@@ -153,7 +153,7 @@ def multiplicacionVotos(tipoVotante, n):
         if i == 0:
             multiplicacion = int(idCandidato)
         else :
-            multiplicacion = (int(idCandidato) * multiplicacion) % n
+            multiplicacion = (int(idCandidato) * multiplicacion) % (int(n)**2)
     return multiplicacion
 
 def getVotosByTipoVotante(tipoVotantes, n):
