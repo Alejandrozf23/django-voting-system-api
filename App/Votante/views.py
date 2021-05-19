@@ -1,4 +1,4 @@
-import random, string
+from Utils import generator
 from hashlib import sha256
 from threading import Thread
 from django.conf import settings
@@ -9,6 +9,8 @@ from django.http import JsonResponse
 from rest_framework.parsers import JSONParser
 from . import models
 from . import serializers
+
+generate = generator.GeneratorPassword()
 
 class EmailThread(Thread):
     def __init__(self,email):
@@ -31,7 +33,7 @@ def getallTipos():
         return None
 
 def buildPassword(length,user,email):
-    password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
+    password = generate.generateKey(length)
     sendMail(password,user,email,'Nueva contraseña')
     passhash = getHashString(password)
     return passhash

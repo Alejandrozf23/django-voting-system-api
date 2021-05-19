@@ -1,5 +1,4 @@
-import string, random
-from Utils import jwt
+from Utils import jwt, generator
 from hashlib import sha256
 from threading import Thread
 from django.http import JsonResponse
@@ -13,6 +12,7 @@ from App.Votante.serializers import TipoVotanteSerializer
 from App.Jornada import models
 
 jwToken = jwt.JsonWebToken()
+generate = generator.GeneratorPassword()
 
 class EmailThread(Thread):
     def __init__(self,email):
@@ -69,12 +69,12 @@ def sendMailCode(code,user,mail,asunto):
     EmailThread(email).start()
 
 def generateAccessCode(length,user,email):
-    code = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
+    code = generate.generateKey(length)
     sendMailCode(code,user,email,'Código de acceso')
     return code
 
 def buildPassword(length,user,email):
-    password = ''.join(random.choice(string.ascii_uppercase+string.digits+string.ascii_lowercase) for x in range(length))
+    password = generate.generateKey(length)
     sendMailRestart(password,user,email,'Restauración de contraseña')
     passhash = sha256(password.encode('utf-8')).hexdigest()    
     return passhash
