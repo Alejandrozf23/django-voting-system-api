@@ -1,4 +1,4 @@
-import random, string
+import random, string, secrets
 
 def getPosition(lenght):
         return random.randint(0, lenght-1)
@@ -22,9 +22,9 @@ class GeneratorPassword:
                 sizeUpper = sizeLower = size + 1
                 sizeDigit = size
 
-        upper = ''.join(random.choice(string.ascii_uppercase) for x in range(int(sizeUpper)))
-        lower = ''.join(random.choice(string.ascii_lowercase) for x in range(int(sizeLower)))
-        digit = ''.join(random.choice(string.digits) for x in range(int(sizeDigit)))
+        upper = ''.join(secrets.choice(string.ascii_uppercase) for i in range(int(sizeUpper)))
+        lower = ''.join(secrets.choice(string.ascii_lowercase) for x in range(int(sizeLower)))
+        digit = ''.join(secrets.choice(string.digits) for x in range(int(sizeDigit)))
         
         for i in range(len(upper)):
             position = random.randint(0, length-1)
