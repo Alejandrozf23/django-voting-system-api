@@ -3,6 +3,7 @@ from hashlib import sha256
 from threading import Thread
 from django.http import JsonResponse
 from django.conf import settings
+from datetime import datetime
 from rest_framework.parsers import JSONParser
 from django.template.loader import get_template
 from django.core.mail import EmailMultiAlternatives
@@ -100,6 +101,22 @@ def getJornadasByVotante(idvotante):
             votos.append({"idJornada":jornadas[i]['idJornada'],"nombreJornada":jornadas[i]['nombreJornada'],"voto":False})
     return votos
 
+def getDateFormat(actualDate):
+    date = actualDate.split(' ')[0].split('/')
+    time = actualDate.split(' ')[1].split(':')
+    return datetime(int(date[2]),int(date[1]),int(date[0]),int(time[0]),int(time[1]),int(time[2]))
+
+def getJornadasActivas():
+    actual = datetime.now()
+    fechaActual = datetime(actual.year,actual.month,actual.day,actual.hour,actual.minute,actual.second)
+    jornadas = models.Jornada.objects.values()
+    for i in range(len(jornadas)):
+        fechaInicio = getDateFormat(jornadas[i]['fechaInicio'])
+        fechaFinal = getDateFormat(jornadas[i]['fechaFinal'])
+        if fechaActual>fechaInicio and fechaActual<fechaFinal:
+            return True
+    return False
+
 # Create your views here.
 def getLogin(request):
     if request.method == 'POST':
@@ -112,7 +129,8 @@ def getLogin(request):
                 if email==usuario[0]['emailadmin'] and password==usuario[0]['password']:
                     response = {
                         'correoAdministrador':usuario[0]['emailadmin'],
-                        'permisos': usuario[0]['permisos']
+                        'permisos': usuario[0]['permisos'],
+                        'jornadas':getJornadasActivas()
                     }
                     return JsonResponse(response,safe=False)
                 else:
